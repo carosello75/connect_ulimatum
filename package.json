@@ -7,8 +7,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "start:prod": "npm run build && npm run api",
-    "build": "esbuild frontend/main.jsx --bundle --format=esm --outfile=frontend/bundle.js",
-    "build:watch": "esbuild frontend/main.jsx --bundle --format=esm --outfile=frontend/bundle.js --watch",
+    "build": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js",
+    "build:watch": "esbuild main.jsx --bundle --format=esm 
+--outfile=bundle.js --watch",
     "api": "node backend/server.cjs",
     "api:dev": "nodemon backend/server.cjs"
   },
@@ -29,4 +30,3 @@
     "esbuild": "^0.23.0"
   }
 }
-
