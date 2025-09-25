@@ -914,6 +914,14 @@ app.delete('/api/admin/cleanup-duplicates', (req, res) => {
   });
 });
 
+// Servi i file statici del frontend
+app.use(express.static('.'));
+
+// Route per servire l'index.html per tutte le route non-API
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
 // Avvio server
 server.listen(PORT, () => {
   console.log(`🚀 Social Network Server running on port ${PORT}`);
