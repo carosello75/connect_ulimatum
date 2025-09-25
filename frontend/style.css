@@ -1,0 +1,28 @@
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #000;
+  color: #e7e9ea;
+}
+
+/* Scrollbar minimal */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Links */
+a { color: #3b82f6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Focus ring minimal */
+:focus-visible {
+  outline: 2px solid rgba(59,130,246,.7);
+  outline-offset: 2px;
+}
+
+

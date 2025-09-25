@@ -1,0 +1,19 @@
+{
+  "watch": [
+    "server.js",
+    "backend/**/*.cjs",
+    "backend/**/*.js"
+  ],
+  "ignore": [
+    "frontend/bundle.js",
+    "frontend/**/*.jsx",
+    "frontend/**/*.js",
+    "frontend/**/*.css",
+    "node_modules",
+    "uploads"
+  ]
+}
+
+
+
+

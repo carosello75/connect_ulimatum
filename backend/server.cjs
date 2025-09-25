@@ -1,0 +1,930 @@
+// server.js - Server principale
+const express = require('express');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const sqlite3 = require('sqlite3').verbose();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Configurazione
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use('/uploads', express.static('uploads'));
+
+// Crea directory per uploads se non esistono
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+  fs.mkdirSync('uploads/images');
+  fs.mkdirSync('uploads/videos');
+}
+
+// Configurazione Multer per upload file
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = file.mimetype.startsWith('image/') ? 'uploads/images' : 'uploads/videos';
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo file immagini e video sono permessi!'), false);
+    }
+  }
+});
+
+// Database Setup
+const db = new sqlite3.Database('./socialnetwork.db');
+
+// Inizializzazione tabelle database
+db.serialize(() => {
+  // Tabella utenti
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    name TEXT NOT NULL,
+    bio TEXT,
+    avatar TEXT,
+    verified BOOLEAN DEFAULT 0,
+    followers_count INTEGER DEFAULT 0,
+    following_count INTEGER DEFAULT 0,
+    posts_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Tabella post
+  db.run(`CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    video_url TEXT,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    shares_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  )`);
+
+  // Tabella like
+  db.run(`CREATE TABLE IF NOT EXISTS likes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    post_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (post_id) REFERENCES posts (id),
+    UNIQUE(user_id, post_id)
+  )`);
+
+  // Tabella commenti
+  db.run(`CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    post_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    likes_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (post_id) REFERENCES posts (id)
+  )`);
+
+  // Tabella followers
+  db.run(`CREATE TABLE IF NOT EXISTS follows (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    follower_id INTEGER NOT NULL,
+    following_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (follower_id) REFERENCES users (id),
+    FOREIGN KEY (following_id) REFERENCES users (id),
+    UNIQUE(follower_id, following_id)
+  )`);
+
+  // Tabella messaggi
+  db.run(`CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    read_status BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users (id),
+    FOREIGN KEY (receiver_id) REFERENCES users (id)
+  )`);
+
+  // Tabella notifiche
+  db.run(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    read_status BOOLEAN DEFAULT 0,
+    related_user_id INTEGER,
+    related_post_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (related_user_id) REFERENCES users (id),
+    FOREIGN KEY (related_post_id) REFERENCES posts (id)
+  )`);
+
+  // Inserimento dati di esempio
+  db.run(`INSERT OR IGNORE INTO users (username, email, password, name, bio, avatar, verified) VALUES 
+    ('marcorossi', 'marco@example.com', '$2a$10$rOzJp4zJp4zJp4zJp4zJpu', 'Marco Rossi', 'Full Stack Developer 💻', '🧑‍💻', 1),
+    ('sofiatech', 'sofia@example.com', '$2a$10$rOzJp4zJp4zJp4zJp4zJpu', 'Sofia Tech', 'UX/UI Designer & Developer', '👩‍💼', 0),
+    ('technewsit', 'tech@example.com', '$2a$10$rOzJp4zJp4zJp4zJp4zJpu', 'Tech News Italia', 'Latest tech news and updates', '📱', 1)
+  `);
+});
+
+// Middleware di autenticazione
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token di accesso richiesto' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Token non valido' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Socket.IO per messaggi real-time
+io.on('connection', (socket) => {
+  console.log('Utente connesso:', socket.id);
+
+  socket.on('join-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`Utente ${userId} si è unito alla room`);
+  });
+
+  socket.on('send-message', async (data) => {
+    const { senderId, receiverId, content } = data;
+    
+    // Salva messaggio nel database
+    db.run(
+      'INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)',
+      [senderId, receiverId, content],
+      function(err) {
+        if (!err) {
+          const messageData = {
+            id: this.lastID,
+            sender_id: senderId,
+            receiver_id: receiverId,
+            content: content,
+            created_at: new Date().toISOString()
+          };
+          
+          // Invia messaggio al destinatario
+          io.to(`user-${receiverId}`).emit('new-message', messageData);
+          io.to(`user-${senderId}`).emit('message-sent', messageData);
+        }
+      }
+    );
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Utente disconnesso:', socket.id);
+  });
+});
+
+// ROUTES
+
+// 🔐 AUTENTICAZIONE
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password, name } = req.body;
+
+    if (!username || !email || !password || !name) {
+      return res.status(400).json({ error: 'Tutti i campi sono richiesti' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.run(
+      'INSERT INTO users (username, email, password, name) VALUES (?, ?, ?, ?)',
+      [username, email, hashedPassword, name],
+      function(err) {
+        if (err) {
+          if (err.message.includes('UNIQUE constraint failed')) {
+            return res.status(400).json({ error: 'Username o email già esistente' });
+          }
+          return res.status(500).json({ error: 'Errore durante la registrazione' });
+        }
+
+        const token = jwt.sign({ id: this.lastID, username }, JWT_SECRET);
+        res.status(201).json({
+          message: 'Registrazione completata',
+          token,
+          user: { id: this.lastID, username, email, name }
+        });
+      }
+    );
+  } catch (error) {
+    res.status(500).json({ error: 'Errore del server' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email e password sono richieste' });
+  }
+
+  db.get(
+    'SELECT * FROM users WHERE email = ?',
+    [email],
+    async (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (!user || !await bcrypt.compare(password, user.password)) {
+        return res.status(401).json({ error: 'Credenziali non valide' });
+      }
+
+      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
+      res.json({
+        message: 'Login effettuato',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          bio: user.bio,
+          avatar: user.avatar,
+          verified: user.verified,
+          followers_count: user.followers_count,
+          following_count: user.following_count,
+          posts_count: user.posts_count
+        }
+      });
+    }
+  );
+});
+
+// 👤 UTENTI
+app.get('/api/users/profile/:username', (req, res) => {
+  const { username } = req.params;
+
+  db.get(
+    `SELECT id, username, name, bio, avatar, verified, followers_count, 
+     following_count, posts_count, created_at FROM users WHERE username = ?`,
+    [username],
+    (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (!user) {
+        return res.status(404).json({ error: 'Utente non trovato' });
+      }
+
+      res.json({ user });
+    }
+  );
+});
+
+app.put('/api/users/profile', authenticateToken, (req, res) => {
+  const { name, bio, avatar } = req.body;
+  const userId = req.user.id;
+
+  db.run(
+    'UPDATE users SET name = ?, bio = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [name, bio, avatar, userId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Errore durante l\'aggiornamento' });
+      }
+
+      res.json({ message: 'Profilo aggiornato con successo' });
+    }
+  );
+});
+
+// 📝 POST
+app.get('/api/posts/feed', authenticateToken, (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  db.all(
+    `SELECT p.*, u.username, u.name, u.avatar, u.verified,
+     (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) as user_liked
+     FROM posts p 
+     JOIN users u ON p.user_id = u.id 
+     ORDER BY p.created_at DESC 
+     LIMIT ? OFFSET ?`,
+    [req.user.id, limit, offset],
+    (err, posts) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ posts });
+    }
+  );
+});
+
+app.post('/api/posts', authenticateToken, upload.single('media'), (req, res) => {
+  const { content } = req.body;
+  const userId = req.user.id;
+  let imageUrl = null;
+  let videoUrl = null;
+
+  if (req.file) {
+    if (req.file.mimetype.startsWith('image/')) {
+      imageUrl = `/uploads/images/${req.file.filename}`;
+    } else if (req.file.mimetype.startsWith('video/')) {
+      videoUrl = `/uploads/videos/${req.file.filename}`;
+    }
+  }
+
+  db.run(
+    'INSERT INTO posts (user_id, content, image_url, video_url) VALUES (?, ?, ?, ?)',
+    [userId, content, imageUrl, videoUrl],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Errore durante la creazione del post' });
+      }
+
+      // Aggiorna contatore post utente
+      db.run('UPDATE users SET posts_count = posts_count + 1 WHERE id = ?', [userId]);
+
+      res.status(201).json({
+        message: 'Post creato con successo',
+        postId: this.lastID
+      });
+    }
+  );
+});
+
+app.get('/api/posts/:id', (req, res) => {
+  const postId = req.params.id;
+
+  db.get(
+    `SELECT p.*, u.username, u.name, u.avatar, u.verified
+     FROM posts p 
+     JOIN users u ON p.user_id = u.id 
+     WHERE p.id = ?`,
+    [postId],
+    (err, post) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (!post) {
+        return res.status(404).json({ error: 'Post non trovato' });
+      }
+
+      res.json({ post });
+    }
+  );
+});
+
+// ❤️ LIKE
+app.post('/api/posts/:id/like', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+
+  // Verifica se il like esiste già
+  db.get(
+    'SELECT * FROM likes WHERE user_id = ? AND post_id = ?',
+    [userId, postId],
+    (err, existingLike) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (existingLike) {
+        // Rimuovi like
+        db.run('DELETE FROM likes WHERE user_id = ? AND post_id = ?', [userId, postId]);
+        db.run('UPDATE posts SET likes_count = likes_count - 1 WHERE id = ?', [postId]);
+        res.json({ message: 'Like rimosso', liked: false });
+      } else {
+        // Aggiungi like
+        db.run('INSERT INTO likes (user_id, post_id) VALUES (?, ?)', [userId, postId]);
+        db.run('UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?', [postId]);
+        
+        // Crea notifica
+        db.get('SELECT user_id FROM posts WHERE id = ?', [postId], (err, post) => {
+          if (!err && post && post.user_id !== userId) {
+            db.run(
+              'INSERT INTO notifications (user_id, type, message, related_user_id, related_post_id) VALUES (?, ?, ?, ?, ?)',
+              [post.user_id, 'like', 'ha messo mi piace al tuo post', userId, postId]
+            );
+          }
+        });
+
+        res.json({ message: 'Like aggiunto', liked: true });
+      }
+    }
+  );
+});
+
+// 💬 COMMENTI
+app.get('/api/posts/:id/comments', (req, res) => {
+  const postId = req.params.id;
+
+  db.all(
+    `SELECT c.*, u.username, u.name, u.avatar, u.verified
+     FROM comments c 
+     JOIN users u ON c.user_id = u.id 
+     WHERE c.post_id = ? 
+     ORDER BY c.created_at ASC`,
+    [postId],
+    (err, comments) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ comments });
+    }
+  );
+});
+
+app.post('/api/posts/:id/comments', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+  const { content } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ error: 'Il contenuto del commento è richiesto' });
+  }
+
+  db.run(
+    'INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)',
+    [userId, postId, content],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Errore durante la creazione del commento' });
+      }
+
+      // Aggiorna contatore commenti del post
+      db.run('UPDATE posts SET comments_count = comments_count + 1 WHERE id = ?', [postId]);
+
+      // Crea notifica
+      db.get('SELECT user_id FROM posts WHERE id = ?', [postId], (err, post) => {
+        if (!err && post && post.user_id !== userId) {
+          db.run(
+            'INSERT INTO notifications (user_id, type, message, related_user_id, related_post_id) VALUES (?, ?, ?, ?, ?)',
+            [post.user_id, 'comment', 'ha commentato il tuo post', userId, postId]
+          );
+        }
+      });
+
+      res.status(201).json({
+        message: 'Commento aggiunto con successo',
+        commentId: this.lastID
+      });
+    }
+  );
+});
+
+// Elimina commento
+app.delete('/api/comments/:id', authenticateToken, (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.user.id;
+
+  // Prima verifica se il commento esiste e se l'utente può eliminarlo
+  db.get(
+    'SELECT * FROM comments WHERE id = ?',
+    [commentId],
+    (err, comment) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (!comment) {
+        return res.status(404).json({ error: 'Commento non trovato' });
+      }
+
+      // Verifica se l'utente può eliminare il commento (autore del commento o del post)
+      db.get(
+        'SELECT user_id FROM posts WHERE id = ?',
+        [comment.post_id],
+        (err, post) => {
+          if (err) {
+            return res.status(500).json({ error: 'Errore del server' });
+          }
+
+          if (comment.user_id !== userId && post.user_id !== userId) {
+            return res.status(403).json({ error: 'Non hai i permessi per eliminare questo commento' });
+          }
+
+          // Elimina il commento
+          db.run(
+            'DELETE FROM comments WHERE id = ?',
+            [commentId],
+            function(err) {
+              if (err) {
+                return res.status(500).json({ error: 'Errore durante l\'eliminazione del commento' });
+              }
+
+              // Aggiorna contatore commenti del post
+              db.run('UPDATE posts SET comments_count = comments_count - 1 WHERE id = ?', [comment.post_id]);
+
+              res.json({ message: 'Commento eliminato con successo' });
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+// Elimina post
+app.delete('/api/posts/:id', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+
+  // Prima verifica se il post esiste e se l'utente può eliminarlo
+  db.get(
+    'SELECT * FROM posts WHERE id = ?',
+    [postId],
+    (err, post) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (!post) {
+        return res.status(404).json({ error: 'Post non trovato' });
+      }
+
+      if (post.user_id !== userId) {
+        return res.status(403).json({ error: 'Non hai i permessi per eliminare questo post' });
+      }
+
+      // Elimina tutti i commenti associati al post
+      db.run('DELETE FROM comments WHERE post_id = ?', [postId], (err) => {
+        if (err) {
+          console.error('Errore nell\'eliminare i commenti:', err);
+        }
+      });
+
+      // Elimina tutti i like associati al post
+      db.run('DELETE FROM likes WHERE post_id = ?', [postId], (err) => {
+        if (err) {
+          console.error('Errore nell\'eliminare i like:', err);
+        }
+      });
+
+      // Elimina il post
+      db.run(
+        'DELETE FROM posts WHERE id = ?',
+        [postId],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Errore durante l\'eliminazione del post' });
+          }
+
+          // Aggiorna contatore post dell'utente
+          db.run('UPDATE users SET posts_count = posts_count - 1 WHERE id = ?', [userId]);
+
+          res.json({ message: 'Post eliminato con successo' });
+        }
+      );
+    }
+  );
+});
+
+// 👥 FOLLOWERS
+app.post('/api/users/:id/follow', authenticateToken, (req, res) => {
+  const targetUserId = req.params.id;
+  const userId = req.user.id;
+
+  if (userId == targetUserId) {
+    return res.status(400).json({ error: 'Non puoi seguire te stesso' });
+  }
+
+  db.get(
+    'SELECT * FROM follows WHERE follower_id = ? AND following_id = ?',
+    [userId, targetUserId],
+    (err, existingFollow) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      if (existingFollow) {
+        // Smetti di seguire
+        db.run('DELETE FROM follows WHERE follower_id = ? AND following_id = ?', [userId, targetUserId]);
+        db.run('UPDATE users SET followers_count = followers_count - 1 WHERE id = ?', [targetUserId]);
+        db.run('UPDATE users SET following_count = following_count - 1 WHERE id = ?', [userId]);
+        res.json({ message: 'Hai smesso di seguire l\'utente', following: false });
+      } else {
+        // Inizia a seguire
+        db.run('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)', [userId, targetUserId]);
+        db.run('UPDATE users SET followers_count = followers_count + 1 WHERE id = ?', [targetUserId]);
+        db.run('UPDATE users SET following_count = following_count + 1 WHERE id = ?', [userId]);
+        
+        // Crea notifica
+        db.run(
+          'INSERT INTO notifications (user_id, type, message, related_user_id) VALUES (?, ?, ?, ?)',
+          [targetUserId, 'follow', 'ha iniziato a seguirti', userId]
+        );
+
+        res.json({ message: 'Ora segui questo utente', following: true });
+      }
+    }
+  );
+});
+
+// 💌 MESSAGGI
+app.get('/api/messages/conversations', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  db.all(
+    `SELECT DISTINCT 
+       CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END as user_id,
+       u.username, u.name, u.avatar,
+       (SELECT content FROM messages m2 
+        WHERE (m2.sender_id = ? AND m2.receiver_id = user_id) 
+           OR (m2.receiver_id = ? AND m2.sender_id = user_id)
+        ORDER BY m2.created_at DESC LIMIT 1) as last_message,
+       (SELECT created_at FROM messages m2 
+        WHERE (m2.sender_id = ? AND m2.receiver_id = user_id) 
+           OR (m2.receiver_id = ? AND m2.sender_id = user_id)
+        ORDER BY m2.created_at DESC LIMIT 1) as last_message_time,
+       (SELECT COUNT(*) FROM messages m2 
+        WHERE m2.sender_id = user_id AND m2.receiver_id = ? AND m2.read_status = 0) as unread_count
+     FROM messages m
+     JOIN users u ON u.id = CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END
+     WHERE m.sender_id = ? OR m.receiver_id = ?
+     ORDER BY last_message_time DESC`,
+    [userId, userId, userId, userId, userId, userId, userId, userId, userId],
+    (err, conversations) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ conversations });
+    }
+  );
+});
+
+app.get('/api/messages/conversation/:userId', authenticateToken, (req, res) => {
+  const currentUserId = req.user.id;
+  const otherUserId = req.params.userId;
+
+  db.all(
+    `SELECT m.*, u.username, u.name, u.avatar
+     FROM messages m
+     JOIN users u ON m.sender_id = u.id
+     WHERE (m.sender_id = ? AND m.receiver_id = ?) 
+        OR (m.sender_id = ? AND m.receiver_id = ?)
+     ORDER BY m.created_at ASC`,
+    [currentUserId, otherUserId, otherUserId, currentUserId],
+    (err, messages) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      // Marca come letti i messaggi ricevuti
+      db.run(
+        'UPDATE messages SET read_status = 1 WHERE sender_id = ? AND receiver_id = ?',
+        [otherUserId, currentUserId]
+      );
+
+      res.json({ messages });
+    }
+  );
+});
+
+// 🔔 NOTIFICHE
+app.get('/api/notifications', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  db.all(
+    `SELECT n.*, u.username, u.name, u.avatar
+     FROM notifications n
+     LEFT JOIN users u ON n.related_user_id = u.id
+     WHERE n.user_id = ?
+     ORDER BY n.created_at DESC
+     LIMIT 50`,
+    [userId],
+    (err, notifications) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ notifications });
+    }
+  );
+});
+
+app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
+  const notificationId = req.params.id;
+  const userId = req.user.id;
+
+  db.run(
+    'UPDATE notifications SET read_status = 1 WHERE id = ? AND user_id = ?',
+    [notificationId, userId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ message: 'Notifica segnata come letta' });
+    }
+  );
+});
+
+// 🔍 RICERCA
+app.get('/api/search', (req, res) => {
+  const { q, type = 'all' } = req.query;
+
+  if (!q) {
+    return res.status(400).json({ error: 'Query di ricerca richiesta' });
+  }
+
+  if (type === 'users' || type === 'all') {
+    db.all(
+      `SELECT id, username, name, bio, avatar, verified, followers_count
+       FROM users 
+       WHERE username LIKE ? OR name LIKE ?
+       LIMIT 20`,
+      [`%${q}%`, `%${q}%`],
+      (err, users) => {
+        if (err) {
+          return res.status(500).json({ error: 'Errore del server' });
+        }
+
+        if (type === 'users') {
+          return res.json({ users });
+        }
+
+        // Se type è 'all', cerca anche nei post
+        db.all(
+          `SELECT p.*, u.username, u.name, u.avatar, u.verified
+           FROM posts p
+           JOIN users u ON p.user_id = u.id
+           WHERE p.content LIKE ?
+           ORDER BY p.created_at DESC
+           LIMIT 20`,
+          [`%${q}%`],
+          (err, posts) => {
+            if (err) {
+              return res.status(500).json({ error: 'Errore del server' });
+            }
+
+            res.json({ users, posts });
+          }
+        );
+      }
+    );
+  } else if (type === 'posts') {
+    db.all(
+      `SELECT p.*, u.username, u.name, u.avatar, u.verified
+       FROM posts p
+       JOIN users u ON p.user_id = u.id
+       WHERE p.content LIKE ?
+       ORDER BY p.created_at DESC
+       LIMIT 20`,
+      [`%${q}%`],
+      (err, posts) => {
+        if (err) {
+          return res.status(500).json({ error: 'Errore del server' });
+        }
+
+        res.json({ posts });
+      }
+    );
+  }
+});
+
+// 📊 STATISTICHE
+app.get('/api/stats', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  db.all(
+    `SELECT 
+       (SELECT COUNT(*) FROM posts WHERE user_id = ?) as total_posts,
+       (SELECT COUNT(*) FROM likes l JOIN posts p ON l.post_id = p.id WHERE p.user_id = ?) as total_likes_received,
+       (SELECT COUNT(*) FROM comments c JOIN posts p ON c.post_id = p.id WHERE p.user_id = ?) as total_comments_received,
+       (SELECT COUNT(*) FROM follows WHERE following_id = ?) as followers,
+       (SELECT COUNT(*) FROM follows WHERE follower_id = ?) as following`,
+    [userId, userId, userId, userId, userId],
+    (err, stats) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ stats: stats[0] });
+    }
+  );
+});
+
+// 🌟 TRENDING
+app.get('/api/trending', (req, res) => {
+  db.all(
+    `SELECT p.*, u.username, u.name, u.avatar, u.verified,
+     (p.likes_count + p.comments_count + p.shares_count) as engagement_score
+     FROM posts p
+     JOIN users u ON p.user_id = u.id
+     WHERE p.created_at > datetime('now', '-24 hours')
+     ORDER BY engagement_score DESC
+     LIMIT 10`,
+    (err, trending) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+
+      res.json({ trending });
+    }
+  );
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File troppo grande (massimo 100MB)' });
+    }
+  }
+  
+  console.error(error);
+  res.status(500).json({ error: 'Errore del server' });
+});
+
+// Route di test
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Social Network API is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint per pulire utenti duplicati (solo per sviluppo)
+app.delete('/api/admin/cleanup-duplicates', (req, res) => {
+  db.run(`
+    DELETE FROM users 
+    WHERE id NOT IN (
+      SELECT MIN(id) 
+      FROM users 
+      GROUP BY email
+    )
+  `, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Errore durante la pulizia' });
+    }
+    res.json({ 
+      message: 'Utenti duplicati rimossi',
+      deletedRows: this.changes 
+    });
+  });
+});
+
+// Avvio server
+server.listen(PORT, () => {
+  console.log(`🚀 Social Network Server running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`💾 Database: SQLite (socialnetwork.db)`);
+  console.log(`📁 Uploads: ./uploads/`);
+});
+
+module.exports = app;
+
+
+
+
+
