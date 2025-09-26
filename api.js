@@ -162,6 +162,7 @@ export const api = {
     }
   },
   notifications: () => request('/api/notifications', { auth: true }),
+  onlineUsers: () => request('/api/online-users', { auth: true }),
 };
 
 

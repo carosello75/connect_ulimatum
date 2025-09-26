@@ -94,6 +94,13 @@ const SimpleSocialApp = () => {
       loadPosts();
       loadNotifications();
       loadOnlineUsers();
+      
+      // Refresh automatico degli utenti online ogni 30 secondi
+      const onlineInterval = setInterval(() => {
+        loadOnlineUsers();
+      }, 30000);
+      
+      return () => clearInterval(onlineInterval);
     } else {
       setShowLogin(true);
     }
@@ -137,7 +144,33 @@ const SimpleSocialApp = () => {
   // Carica utenti online
   const loadOnlineUsers = async () => {
     try {
-      // Per ora mostriamo solo l'utente corrente come online
+      console.log('👥 Loading online users...');
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/online-users`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Online users response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento degli utenti online');
+      }
+      
+      const onlineUsers = await response.json();
+      console.log('✅ Online users loaded:', onlineUsers.length, 'users');
+      
+      setOnlineUsers(onlineUsers);
+    } catch (error) {
+      console.error('❌ Errore nel caricamento degli utenti online:', error);
+      // Fallback: mostra solo l'utente corrente
       if (user) {
         setOnlineUsers([
           { 
@@ -150,8 +183,6 @@ const SimpleSocialApp = () => {
       } else {
         setOnlineUsers([]);
       }
-    } catch (error) {
-      console.error('Errore nel caricare gli utenti online:', error);
     }
   };
 

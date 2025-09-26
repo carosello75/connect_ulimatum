@@ -888,6 +888,31 @@ app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
   );
 });
 
+// 👥 UTENTI ONLINE
+app.get('/api/online-users', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  
+  // Ottieni tutti gli utenti tranne quello corrente
+  db.all(
+    'SELECT id, username, name, avatar, created_at FROM users WHERE id != ? ORDER BY created_at DESC LIMIT 10',
+    [userId],
+    (err, users) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore nel caricamento degli utenti online' });
+      }
+      
+      // Aggiungi timestamp di "online" simulato (ultimi 5 minuti)
+      const onlineUsers = users.map(user => ({
+        ...user,
+        last_seen: new Date(Date.now() - Math.random() * 5 * 60 * 1000).toISOString(),
+        is_online: true
+      }));
+      
+      res.json(onlineUsers);
+    }
+  );
+});
+
 // 🔍 RICERCA
 app.get('/api/search', (req, res) => {
   const { q, type = 'all' } = req.query;
