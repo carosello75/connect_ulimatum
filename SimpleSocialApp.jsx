@@ -586,7 +586,9 @@ const SimpleSocialApp = () => {
       setFilePreview(null);
       setGeneratedTitle('');
       setGeneratedDescription('');
-      loadPosts();
+      
+      // Ricarica i post per mostrare il nuovo post
+      await loadPosts();
       
       alert('Post pubblicato con successo!');
       
@@ -796,10 +798,33 @@ const SimpleSocialApp = () => {
   // Carica commenti per un post
   const loadComments = async (postId) => {
     try {
-      const data = await api.comments(postId);
+      console.log('💬 Loading comments for post:', postId);
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Comments response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei commenti');
+      }
+      
+      const data = await response.json();
+      console.log('✅ Comments loaded:', data.comments?.length || 0, 'comments');
+      
       setComments(prev => ({ ...prev, [postId]: data.comments || [] }));
     } catch (error) {
-      console.error('Errore nel caricare i commenti:', error);
+      console.error('❌ Errore nel caricamento dei commenti:', error);
+      setComments(prev => ({ ...prev, [postId]: [] }));
     }
   };
 
@@ -808,9 +833,32 @@ const SimpleSocialApp = () => {
     if (!newComment.trim()) return;
     
     try {
-      await api.addComment(postId, newComment);
+      console.log('💬 Adding comment to post:', postId);
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: newComment })
+      });
+      
+      console.log('📡 Add comment response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nell\'aggiunta del commento');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Comment added:', result);
+      
       setNewComment('');
-      loadComments(postId);
+      await loadComments(postId);
       
       // Aggiorna il contatore commenti nel post
       setPosts(posts.map(post => 
@@ -819,17 +867,39 @@ const SimpleSocialApp = () => {
           : post
       ));
     } catch (error) {
-      alert('Errore nell\'aggiungere il commento: ' + error.message);
+      console.error('❌ Errore nell\'aggiunta del commento:', error);
+      alert('Errore nell\'aggiunta del commento: ' + error.message);
     }
   };
 
-  // Elimina commento
+  // Elimina commento - Paradigma semplificato
   const handleDeleteComment = async (commentId, postId) => {
     if (!confirm('Sei sicuro di voler eliminare questo commento?')) return;
     
     try {
-      await api.deleteComment(commentId);
-      loadComments(postId);
+      console.log('🗑️ Deleting comment:', commentId);
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Delete comment response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nell\'eliminazione del commento');
+      }
+      
+      console.log('✅ Comment deleted');
+      
+      await loadComments(postId);
       
       // Aggiorna il contatore commenti nel post
       setPosts(posts.map(post => 
@@ -838,7 +908,8 @@ const SimpleSocialApp = () => {
           : post
       ));
     } catch (error) {
-      alert('Errore nell\'eliminare il commento: ' + error.message);
+      console.error('❌ Errore nell\'eliminazione del commento:', error);
+      alert('Errore nell\'eliminazione del commento: ' + error.message);
     }
   };
 
