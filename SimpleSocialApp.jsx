@@ -320,8 +320,16 @@ const SimpleSocialApp = () => {
     try {
       const response = await api.updateProfile(profileSettings, profileImage);
       alert('Profilo aggiornato con successo');
-      setUser(response.user);
-      localStorage.setItem('auth_user', JSON.stringify(response.user));
+      
+      // Aggiorna l'utente con i nuovi dati
+      const updatedUser = { ...user, ...response.user };
+      setUser(updatedUser);
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      
+      // Reset dell'immagine profilo
+      setProfileImage(null);
+      setProfileImagePreview(null);
+      
       setShowSettings(false);
     } catch (error) {
       alert('Errore nell\'aggiornamento del profilo: ' + error.message);
@@ -981,8 +989,12 @@ const SimpleSocialApp = () => {
         {/* Form per nuovo post */}
         <div className="bg-gray-900 p-4 rounded-lg mb-6">
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-              {user?.name?.charAt(0) || 'U'}
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white">{user?.name?.charAt(0) || 'U'}</span>
+              )}
             </div>
             <div className="flex-1">
               <textarea
@@ -1230,8 +1242,12 @@ const SimpleSocialApp = () => {
                       <div className="mt-4 border-t border-gray-700 pt-4">
                         {/* Form per nuovo commento */}
                         <div className="flex items-start space-x-3 mb-4">
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm">
-                            {user?.name?.charAt(0) || 'U'}
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm overflow-hidden">
+                            {user?.avatar ? (
+                              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-white">{user?.name?.charAt(0) || 'U'}</span>
+                            )}
                           </div>
                           <div className="flex-1 flex space-x-2">
                             <input
