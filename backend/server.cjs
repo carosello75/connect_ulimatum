@@ -1159,12 +1159,12 @@ app.post('/api/auth/delete-account', authenticateToken, (req, res) => {
 });
 
 // Aggiorna profilo
-app.post('/api/profile/update', authenticateToken, upload.single('image'), (req, res) => {
+app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image', maxCount: 1 }]), (req, res) => {
   const userId = req.user.id;
   const { name, username, email, bio, website, location } = req.body;
   
   console.log('Dati ricevuti:', req.body);
-  console.log('File ricevuto:', req.file);
+  console.log('File ricevuto:', req.files);
   
   // Verifica se l'username è già in uso da altri utenti
   if (username) {
@@ -1229,8 +1229,8 @@ app.post('/api/profile/update', authenticateToken, upload.single('image'), (req,
     }
     
     // Gestisci immagine profilo
-    if (req.file) {
-      const imageUrl = `/uploads/images/${req.file.filename}`;
+    if (req.files && req.files.image && req.files.image[0]) {
+      const imageUrl = `/uploads/images/${req.files.image[0].filename}`;
       updateFields.push('avatar = ?');
       values.push(imageUrl);
     }
