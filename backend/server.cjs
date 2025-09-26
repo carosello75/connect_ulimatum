@@ -1163,6 +1163,9 @@ app.post('/api/profile/update', authenticateToken, upload.single('image'), (req,
   const userId = req.user.id;
   const { name, username, email, bio, website, location } = req.body;
   
+  console.log('Dati ricevuti:', req.body);
+  console.log('File ricevuto:', req.file);
+  
   // Verifica se l'username è già in uso da altri utenti
   if (username) {
     db.get('SELECT id FROM users WHERE username = ? AND id != ?', [username, userId], (err, existingUser) => {
