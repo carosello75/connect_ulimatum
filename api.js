@@ -4,8 +4,14 @@ function getToken() {
   return localStorage.getItem('auth_token') || '';
 }
 
-async function request(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+async function request(path, { method = 'GET', body, auth = false, isFormData = false } = {}) {
+  const headers = {};
+  
+  // Se non è FormData, usa JSON
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
   if (auth) {
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -15,13 +21,13 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
     url: `${API_BASE}${path}`,
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined
+    body: isFormData ? 'FormData' : (body ? JSON.stringify(body) : undefined)
   });
   
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
   });
   
   console.log('API Response:', {
