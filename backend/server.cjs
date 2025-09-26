@@ -491,6 +491,16 @@ app.post('/api/posts', authenticateToken, upload.single('media'), resizeImage, (
   let imageUrl = null;
   let videoUrl = null;
 
+  console.log('📝 Creazione post - Dati ricevuti:', {
+    content,
+    userId,
+    file: req.file ? {
+      filename: req.file.filename,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : null
+  });
+
   if (req.file) {
     if (req.file.mimetype.startsWith('image/')) {
       imageUrl = `/uploads/images/${req.file.filename}`;
@@ -499,16 +509,32 @@ app.post('/api/posts', authenticateToken, upload.single('media'), resizeImage, (
     }
   }
 
+  console.log('💾 Inserimento nel database:', {
+    userId,
+    content,
+    imageUrl,
+    videoUrl
+  });
+
   db.run(
     'INSERT INTO posts (user_id, content, image_url, video_url) VALUES (?, ?, ?, ?)',
     [userId, content, imageUrl, videoUrl],
     function(err) {
       if (err) {
+        console.error('❌ Errore database:', err);
         return res.status(500).json({ error: 'Errore durante la creazione del post' });
       }
 
+      console.log('✅ Post inserito con ID:', this.lastID);
+
       // Aggiorna contatore post utente
-      db.run('UPDATE users SET posts_count = posts_count + 1 WHERE id = ?', [userId]);
+      db.run('UPDATE users SET posts_count = posts_count + 1 WHERE id = ?', [userId], (err) => {
+        if (err) {
+          console.error('❌ Errore aggiornamento contatore:', err);
+        } else {
+          console.log('✅ Contatore aggiornato per utente:', userId);
+        }
+      });
 
       res.status(201).json({
         message: 'Post creato con successo',
