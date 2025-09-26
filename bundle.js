@@ -23803,11 +23803,13 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const token = localStorage.getItem("auth_token");
+      console.log("\u{1F680} Creando post:", { newPost, selectedFile, fileType });
       let response;
       if (selectedFile) {
         const formData = new FormData();
         formData.append("content", newPost);
         formData.append("media", selectedFile);
+        console.log("\u{1F4E4} Invio post con media:", formData);
         response = await fetch(`${apiBase}/api/posts`, {
           method: "POST",
           headers: {
@@ -23816,6 +23818,7 @@ function SimpleConnect() {
           body: formData
         });
       } else {
+        console.log("\u{1F4E4} Invio post solo testo:", { content: newPost });
         response = await fetch(`${apiBase}/api/posts`, {
           method: "POST",
           headers: {
@@ -23825,15 +23828,21 @@ function SimpleConnect() {
           body: JSON.stringify({ content: newPost })
         });
       }
+      console.log("\u{1F4E1} Response status:", response.status);
       if (response.ok) {
+        const data = await response.json();
+        console.log("\u2705 Post creato:", data);
         setNewPost("");
         removeFile();
         loadPosts();
         alert("Post pubblicato con successo!");
       } else {
-        alert("Errore nella pubblicazione del post");
+        const errorData = await response.json();
+        console.error("\u274C Errore post:", errorData);
+        alert("Errore nella pubblicazione del post: " + (errorData.error || "Errore sconosciuto"));
       }
     } catch (error) {
+      console.error("\u274C Errore completo:", error);
       alert("Errore: " + error.message);
     } finally {
       setLoading(false);

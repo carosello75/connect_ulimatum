@@ -1410,6 +1410,56 @@ app.get('/api/auth/verify-reset-token/:token', (req, res) => {
   );
 });
 
+// Notifiche
+app.get('/api/notifications', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  
+  db.all(
+    'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+    [userId],
+    (err, notifications) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore nel caricamento delle notifiche' });
+      }
+      
+      res.json({ notifications: notifications || [] });
+    }
+  );
+});
+
+// Utenti online
+app.get('/api/online-users', authenticateToken, (req, res) => {
+  const currentUserId = req.user.id;
+  
+  db.all(
+    'SELECT id, name, username, avatar FROM users WHERE id != ? ORDER BY created_at DESC LIMIT 20',
+    [currentUserId],
+    (err, users) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore nel caricamento degli utenti' });
+      }
+      
+      // Simula status online
+      const onlineUsers = users.map(user => ({
+        ...user,
+        status: Math.random() > 0.3 ? 'online' : 'away'
+      }));
+      
+      res.json({ users: onlineUsers });
+    }
+  );
+});
+
+// Analisi AI
+app.post('/api/ai/analyze', authenticateToken, (req, res) => {
+  const { content, mediaType } = req.body;
+  
+  // Simula analisi AI
+  const analysis = `Analisi AI: Contenuto "${content.substring(0, 50)}..." - Tipo: ${mediaType || 'testo'} - Sentiment: Positivo`;
+  
+  res.json({ analysis });
+});
+
 // Profilo pubblico
 app.get('/api/users/profile/:username', (req, res) => {
   const { username } = req.params;

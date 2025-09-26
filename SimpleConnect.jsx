@@ -282,12 +282,16 @@ function SimpleConnect() {
       
       const token = localStorage.getItem('auth_token');
       
+      console.log('🚀 Creando post:', { newPost, selectedFile, fileType });
+      
       let response;
       if (selectedFile) {
         // Post con media
         const formData = new FormData();
         formData.append('content', newPost);
         formData.append('media', selectedFile);
+        
+        console.log('📤 Invio post con media:', formData);
         
         response = await fetch(`${apiBase}/api/posts`, {
           method: 'POST',
@@ -298,6 +302,8 @@ function SimpleConnect() {
         });
       } else {
         // Post solo testo
+        console.log('📤 Invio post solo testo:', { content: newPost });
+        
         response = await fetch(`${apiBase}/api/posts`, {
           method: 'POST',
           headers: {
@@ -308,15 +314,22 @@ function SimpleConnect() {
         });
       }
       
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Post creato:', data);
         setNewPost('');
         removeFile();
         loadPosts();
         alert('Post pubblicato con successo!');
       } else {
-        alert('Errore nella pubblicazione del post');
+        const errorData = await response.json();
+        console.error('❌ Errore post:', errorData);
+        alert('Errore nella pubblicazione del post: ' + (errorData.error || 'Errore sconosciuto'));
       }
     } catch (error) {
+      console.error('❌ Errore completo:', error);
       alert('Errore: ' + error.message);
     } finally {
       setLoading(false);
