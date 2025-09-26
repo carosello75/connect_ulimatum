@@ -1063,8 +1063,15 @@ app.post('/api/auth/forgot-password', (req, res) => {
       [user.id, resetToken, expiresAt.toISOString()],
       function(err) {
         if (err) {
+          console.error('Errore nel salvare il token:', err);
           return res.status(500).json({ error: 'Errore nel salvare il token' });
         }
+        
+        console.log('Token salvato nel database:', {
+          userId: user.id,
+          token: resetToken,
+          expiresAt: expiresAt.toISOString()
+        });
         
         // Determina l'URL base
         const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
@@ -1312,6 +1319,15 @@ app.get('/reset-password', (req, res) => {
   if (!token) {
     return res.status(400).send('Token di reset mancante');
   }
+  
+  // Prima controlla tutti i token nel database per debug
+  db.all('SELECT * FROM password_resets ORDER BY created_at DESC LIMIT 5', (err, allTokens) => {
+    if (err) {
+      console.error('Errore nel recuperare i token:', err);
+    } else {
+      console.log('Ultimi 5 token nel database:', allTokens);
+    }
+  });
   
   // Verifica se il token esiste e non è scaduto
   db.get(
