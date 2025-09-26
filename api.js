@@ -69,20 +69,17 @@ export const api = {
   resetPassword: (token, newPassword) => request('/api/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
   deleteAccount: (password, reason) => request('/api/auth/delete-account', { method: 'POST', body: { password, reason }, auth: true }),
   updateProfile: (profileData, image) => {
-    // Se c'è un'immagine, usa FormData, altrimenti usa JSON
+    // Usa sempre FormData per compatibilità con il backend
+    const formData = new FormData();
+    Object.keys(profileData).forEach(key => {
+      if (profileData[key] !== undefined && profileData[key] !== null) {
+        formData.append(key, profileData[key]);
+      }
+    });
     if (image) {
-      const formData = new FormData();
-      Object.keys(profileData).forEach(key => {
-        if (profileData[key] !== undefined && profileData[key] !== null) {
-          formData.append(key, profileData[key]);
-        }
-      });
       formData.append('image', image);
-      return request('/api/profile/update', { method: 'POST', body: formData, auth: true, isFormData: true });
-    } else {
-      // Senza immagine, invia come JSON
-      return request('/api/profile/update', { method: 'POST', body: profileData, auth: true });
     }
+    return request('/api/profile/update', { method: 'POST', body: formData, auth: true, isFormData: true });
   },
   changePassword: (currentPassword, newPassword) => request('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword }, auth: true }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
