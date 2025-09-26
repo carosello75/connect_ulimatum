@@ -78,25 +78,18 @@ const SimpleSocialApp = () => {
 
   // Carica utente al mount
   useEffect(() => {
-    // Debug per capire cosa sta succedendo
-    console.log('URL completo:', window.location.href);
-    console.log('Search params:', window.location.search);
-    
     // Controlla se c'è un token di reset nell'URL
     const urlParams = new URLSearchParams(window.location.search);
     const resetToken = urlParams.get('token');
     
-    console.log('Token rilevato:', resetToken);
-    console.log('Lunghezza token:', resetToken ? resetToken.length : 0);
-    
-    if (resetToken && resetToken.length > 10) {
-      // Se c'è un token di reset valido, verifica che sia valido
-      console.log('Verificando token:', resetToken);
+    // Solo se c'è un token valido (almeno 20 caratteri)
+    if (resetToken && resetToken.length >= 20) {
       verifyResetToken(resetToken);
       return;
-    } else if (resetToken) {
-      // Se c'è un token ma non è valido, pulisci l'URL
-      console.log('Token non valido, pulendo URL');
+    }
+    
+    // Pulisci l'URL se ci sono parametri non validi
+    if (window.location.search && !resetToken) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     

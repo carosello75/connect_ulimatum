@@ -6,13 +6,7 @@ const API_BASE = (typeof window !== 'undefined' && window.API_BASE) ||
 
 function getToken() {
   try {
-    const token = localStorage.getItem('auth_token') || '';
-    console.log('getToken debug:', {
-      token: token ? token.substring(0, 20) + '...' : 'null',
-      localStorageAvailable: typeof localStorage !== 'undefined',
-      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    });
-    return token;
+    return localStorage.getItem('auth_token') || '';
   } catch (error) {
     console.error('Errore nel getToken:', error);
     return '';
@@ -21,16 +15,6 @@ function getToken() {
 
 async function request(path, { method = 'GET', body, auth = false, isFormData = false } = {}) {
   const headers = {};
-  
-  // Debug per mobile
-  console.log('API Request Debug:', {
-    path,
-    method,
-    auth,
-    isFormData,
-    userAgent: navigator.userAgent,
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  });
   
   // Se non è FormData, usa JSON
   if (!isFormData) {
@@ -41,18 +25,8 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
     const token = getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('Token inviato:', token.substring(0, 20) + '...');
-    } else {
-      console.log('Nessun token trovato');
     }
   }
-  
-  console.log('API Request:', {
-    url: `${API_BASE}${path}`,
-    method,
-    headers,
-    body: isFormData ? 'FormData' : (body ? JSON.stringify(body) : undefined)
-  });
   
   const res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -60,20 +34,13 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
     body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
   });
   
-  console.log('API Response:', {
-    status: res.status,
-    statusText: res.statusText,
-    ok: res.ok
-  });
-  
   if (!res.ok) {
     let detail = 'Request failed';
     try { 
       const json = await res.json(); 
       detail = json.error || json.message || detail;
-      console.error('API Error Response:', json);
     } catch (e) {
-      console.error('Error parsing response:', e);
+      // Ignora errori di parsing
     }
     const error = new Error(detail);
     error.status = res.status;
