@@ -217,7 +217,7 @@ const SimpleSocialApp = () => {
     e.preventDefault();
     try {
       const response = await api.forgotPassword(forgotPasswordEmail);
-      alert('Email di reset inviata! Controlla la tua casella di posta.');
+      alert(`Email di reset inviata! Link di reset: ${response.resetLink}`);
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
     } catch (error) {

@@ -1066,13 +1066,22 @@ app.post('/api/auth/forgot-password', (req, res) => {
           return res.status(500).json({ error: 'Errore nel salvare il token' });
         }
         
+        // Determina l'URL base
+        const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : (process.env.NODE_ENV === 'production' 
+              ? 'https://web-production-54984.up.railway.app' 
+              : `${req.protocol}://${req.get('host')}`);
+        
+        const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+        
         // Invia email (per ora simuliamo)
         console.log(`Reset password token per ${email}: ${resetToken}`);
-        console.log(`Link di reset: ${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`);
+        console.log(`Link di reset: ${resetLink}`);
         
         res.json({ 
           message: 'Email di reset inviata',
-          token: resetToken // Solo per sviluppo, in produzione non inviare il token
+          resetLink: resetLink // Solo per sviluppo, in produzione non inviare il link
         });
       }
     );
