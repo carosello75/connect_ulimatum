@@ -1091,7 +1091,7 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useReducer(reducer, initialArg, init);
         }
-        function useRef(initialValue) {
+        function useRef2(initialValue) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
@@ -1885,7 +1885,7 @@ var require_react_development = __commonJS({
         exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
-        exports.useRef = useRef;
+        exports.useRef = useRef2;
         exports.useState = useState2;
         exports.useSyncExternalStore = useSyncExternalStore;
         exports.useTransition = useTransition;
@@ -23601,12 +23601,23 @@ function SimpleConnect() {
     confirmPassword: ""
   });
   const [isRegister, setIsRegister] = (0, import_react.useState)(false);
+  const [selectedFile, setSelectedFile] = (0, import_react.useState)(null);
+  const [filePreview, setFilePreview] = (0, import_react.useState)(null);
+  const [fileType, setFileType] = (0, import_react.useState)(null);
+  const [showComments, setShowComments] = (0, import_react.useState)({});
+  const [comments, setComments] = (0, import_react.useState)({});
+  const [newComment, setNewComment] = (0, import_react.useState)("");
+  const [notifications, setNotifications] = (0, import_react.useState)([]);
+  const [onlineUsers, setOnlineUsers] = (0, import_react.useState)([]);
+  const fileInputRef = (0, import_react.useRef)(null);
   (0, import_react.useEffect)(() => {
     const savedUser = localStorage.getItem("auth_user");
     const savedToken = localStorage.getItem("auth_token");
     if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
       loadPosts();
+      loadNotifications();
+      loadOnlineUsers();
     } else {
       setShowLogin(true);
     }
@@ -23631,6 +23642,98 @@ function SimpleConnect() {
       setLoading(false);
     }
   };
+  const loadNotifications = async () => {
+    try {
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/notifications`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (error) {
+      console.error("Errore nel caricamento delle notifiche:", error);
+    }
+  };
+  const loadOnlineUsers = async () => {
+    try {
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/online-users`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOnlineUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error("Errore nel caricamento degli utenti online:", error);
+    }
+  };
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setFileType(file.type.startsWith("image/") ? "image" : "video");
+      const reader = new FileReader();
+      reader.onload = (e2) => {
+        setFilePreview(e2.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  const removeFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    setFileType(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+  const handleLike = async (postId) => {
+    try {
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        loadPosts();
+      }
+    } catch (error) {
+      console.error("Errore nel like:", error);
+    }
+  };
+  const handleAddComment = async (postId) => {
+    if (!newComment.trim()) return;
+    try {
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: newComment })
+      });
+      if (response.ok) {
+        setNewComment("");
+        loadPosts();
+      }
+    } catch (error) {
+      console.error("Errore nell'aggiunta del commento:", error);
+    }
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -23648,6 +23751,8 @@ function SimpleConnect() {
         setUser(data.user);
         setShowLogin(false);
         loadPosts();
+        loadNotifications();
+        loadOnlineUsers();
         alert("Login effettuato con successo!");
       } else {
         alert("Credenziali non valide");
@@ -23693,21 +23798,36 @@ function SimpleConnect() {
   };
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newPost.trim() && !selectedFile) return;
     setLoading(true);
     try {
       const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${apiBase}/api/posts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ content: newPost })
-      });
+      let response;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("content", newPost);
+        formData.append("media", selectedFile);
+        response = await fetch(`${apiBase}/api/posts`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+      } else {
+        response = await fetch(`${apiBase}/api/posts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ content: newPost })
+        });
+      }
       if (response.ok) {
         setNewPost("");
+        removeFile();
         loadPosts();
         alert("Post pubblicato con successo!");
       } else {
@@ -23831,14 +23951,14 @@ function SimpleConnect() {
       "Hai gi\xE0 un account? Accedi"
     ))));
   }
-  return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-4xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-sm" }, "Ciao, ", user.name, "!"), /* @__PURE__ */ import_react.default.createElement(
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-6xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-sm" }, "Ciao, ", user.name, "!"), /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
       onClick: handleLogout,
       className: "bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
     },
     "Logout"
-  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-4xl mx-auto p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-4 rounded-lg mb-6" }, /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleCreatePost, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement(
+  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-6xl mx-auto flex" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 p-4 border-r border-gray-800" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold mb-4 text-blue-400" }, "\u{1F514} Notifiche"), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, notifications.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-sm" }, "Nessuna notifica") : notifications.map((notification) => /* @__PURE__ */ import_react.default.createElement("div", { key: notification.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-2 h-2 rounded-full ${notification.type === "like" ? "bg-red-500" : notification.type === "comment" ? "bg-blue-500" : notification.type === "follow" ? "bg-green-500" : "bg-purple-500"}` }), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300" }, notification.message)), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-500 mt-1" }, new Date(notification.created_at).toLocaleString("it-IT")))))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-1 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-4 rounded-lg mb-6" }, /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleCreatePost, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement(
     "textarea",
     {
       value: newPost,
@@ -23847,15 +23967,91 @@ function SimpleConnect() {
       className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 resize-none",
       rows: "3"
     }
-  ), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-end" }, /* @__PURE__ */ import_react.default.createElement(
+  ), filePreview && /* @__PURE__ */ import_react.default.createElement("div", { className: "relative" }, fileType === "image" ? /* @__PURE__ */ import_react.default.createElement("img", { src: filePreview, alt: "Preview", className: "max-w-full max-h-64 rounded-lg object-cover" }) : /* @__PURE__ */ import_react.default.createElement("video", { src: filePreview, controls: true, className: "max-w-full max-h-64 rounded-lg" }), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: removeFile,
+      className: "absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-2" }, /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      ref: fileInputRef,
+      type: "file",
+      accept: "image/*,video/*",
+      onChange: handleFileSelect,
+      className: "hidden"
+    }
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => fileInputRef.current?.click(),
+      className: "bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+    },
+    "\u{1F4F7} Foto/Video"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-end" }, /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
       type: "submit",
-      disabled: !newPost.trim() || loading,
+      disabled: !newPost.trim() && !selectedFile || loading,
       className: "bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:bg-gray-700"
     },
     loading ? "Pubblicando..." : "Pubblica"
-  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-4" }, loading && posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Caricamento post...")) : posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Nessun post ancora. Sii il primo a pubblicare!")) : posts.map((post) => /* @__PURE__ */ import_react.default.createElement("div", { key: post.id, className: "bg-gray-900 p-4 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-3 mb-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold" }, post.name ? post.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { className: "font-bold" }, post.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, "@", post.username))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-100 mb-3" }, post.content), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, new Date(post.created_at).toLocaleString("it-IT")))))));
+  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-4" }, loading && posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Caricamento post...")) : posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Nessun post ancora. Sii il primo a pubblicare!")) : posts.map((post) => /* @__PURE__ */ import_react.default.createElement("div", { key: post.id, className: "bg-gray-900 p-4 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold" }, post.name ? post.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { className: "font-bold" }, post.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, "@", post.username)))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-100 mb-3" }, post.content), post.image_url && /* @__PURE__ */ import_react.default.createElement(
+    "img",
+    {
+      src: `${window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app"}${post.image_url}`,
+      alt: "Post image",
+      className: "max-w-full rounded-lg mb-3"
+    }
+  ), post.video_url && /* @__PURE__ */ import_react.default.createElement(
+    "video",
+    {
+      src: `${window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app"}${post.video_url}`,
+      controls: true,
+      className: "max-w-full rounded-lg mb-3"
+    }
+  ), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4 mb-3" }, /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => handleLike(post.id),
+      className: `flex items-center space-x-1 ${post.user_liked ? "text-red-500" : "text-gray-400 hover:text-red-500"}`
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, post.user_liked ? "\u2764\uFE0F" : "\u{1F90D}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, post.likes_count)
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => {
+        setShowComments((prev) => ({
+          ...prev,
+          [post.id]: !prev[post.id]
+        }));
+      },
+      className: "flex items-center space-x-1 text-gray-400 hover:text-blue-500"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4AC}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, post.comments_count)
+  ), /* @__PURE__ */ import_react.default.createElement("button", { className: "flex items-center space-x-1 text-gray-400 hover:text-green-500" }, /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4E4}"), /* @__PURE__ */ import_react.default.createElement("span", null, post.shares_count))), showComments[post.id] && /* @__PURE__ */ import_react.default.createElement("div", { className: "border-t border-gray-700 pt-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-2" }, /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: newComment,
+      onChange: (e) => setNewComment(e.target.value),
+      placeholder: "Scrivi un commento...",
+      className: "flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+    }
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => handleAddComment(post.id),
+      className: "bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+    },
+    "Invia"
+  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, new Date(post.created_at).toLocaleString("it-IT")))))), /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 p-4 border-l border-gray-800" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold mb-4 text-green-400" }, "\u{1F465} Online"), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, onlineUsers.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-sm" }, "Nessun utente online") : onlineUsers.map((onlineUser) => /* @__PURE__ */ import_react.default.createElement("div", { key: onlineUser.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-2 h-2 rounded-full ${onlineUser.status === "online" ? "bg-green-500" : onlineUser.status === "away" ? "bg-yellow-500" : "bg-gray-500"}` }), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300" }, onlineUser.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-500" }, "@", onlineUser.username))))))));
 }
 var SimpleConnect_default = SimpleConnect;
 
