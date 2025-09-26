@@ -23580,11 +23580,11 @@ var require_client = __commonJS({
   }
 });
 
-// frontend/main.jsx
+// main.jsx
 var import_react4 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
-// frontend/SimpleSocialApp.jsx
+// SimpleSocialApp.jsx
 var import_react3 = __toESM(require_react(), 1);
 
 // node_modules/lucide-react/dist/esm/createLucideIcon.js
@@ -23678,6 +23678,38 @@ var ExternalLink = createLucideIcon("ExternalLink", [
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ]);
 
+// node_modules/lucide-react/dist/esm/icons/eye-off.js
+var EyeOff = createLucideIcon("EyeOff", [
+  [
+    "path",
+    {
+      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+      key: "ct8e1f"
+    }
+  ],
+  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
+  [
+    "path",
+    {
+      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+      key: "13bj9a"
+    }
+  ],
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
+]);
+
+// node_modules/lucide-react/dist/esm/icons/eye.js
+var Eye = createLucideIcon("Eye", [
+  [
+    "path",
+    {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+]);
+
 // node_modules/lucide-react/dist/esm/icons/heart.js
 var Heart = createLucideIcon("Heart", [
   [
@@ -23694,6 +23726,12 @@ var Image = createLucideIcon("Image", [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+]);
+
+// node_modules/lucide-react/dist/esm/icons/mail.js
+var Mail = createLucideIcon("Mail", [
+  ["rect", { width: "20", height: "16", x: "2", y: "4", rx: "2", key: "18n3k1" }],
+  ["path", { d: "m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7", key: "1ocrg3" }]
 ]);
 
 // node_modules/lucide-react/dist/esm/icons/message-circle.js
@@ -23737,7 +23775,7 @@ var Video = createLucideIcon("Video", [
   ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
 ]);
 
-// frontend/api.js
+// api.js
 var API_BASE = typeof window !== "undefined" && window.API_BASE || "http://localhost:3001";
 function getToken() {
   return localStorage.getItem("auth_token") || "";
@@ -23782,6 +23820,8 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
 var api = {
   login: (email, password) => request("/api/auth/login", { method: "POST", body: { email, password } }),
   register: (username, email, password, name) => request("/api/auth/register", { method: "POST", body: { username, email, password, name } }),
+  forgotPassword: (email) => request("/api/auth/forgot-password", { method: "POST", body: { email } }),
+  resetPassword: (token, newPassword) => request("/api/auth/reset-password", { method: "POST", body: { token, newPassword } }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
   like: (postId) => request(`/api/posts/${postId}/like`, { method: "POST", auth: true }),
   comments: (postId) => request(`/api/posts/${postId}/comments`),
@@ -23794,7 +23834,7 @@ var api = {
   notifications: () => request("/api/notifications", { auth: true })
 };
 
-// frontend/SimpleSocialApp.jsx
+// SimpleSocialApp.jsx
 var SimpleSocialApp = () => {
   const [user, setUser] = (0, import_react3.useState)(null);
   const [posts, setPosts] = (0, import_react3.useState)([]);
@@ -23814,8 +23854,16 @@ var SimpleSocialApp = () => {
   const [selectedPost, setSelectedPost] = (0, import_react3.useState)(null);
   const [showLogin, setShowLogin] = (0, import_react3.useState)(false);
   const [loginData, setLoginData] = (0, import_react3.useState)({ email: "", password: "" });
-  const [registerData, setRegisterData] = (0, import_react3.useState)({ username: "", name: "", email: "", password: "" });
+  const [registerData, setRegisterData] = (0, import_react3.useState)({ username: "", name: "", email: "", password: "", confirmPassword: "" });
   const [isRegister, setIsRegister] = (0, import_react3.useState)(false);
+  const [showPassword, setShowPassword] = (0, import_react3.useState)(false);
+  const [showConfirmPassword, setShowConfirmPassword] = (0, import_react3.useState)(false);
+  const [showForgotPassword, setShowForgotPassword] = (0, import_react3.useState)(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = (0, import_react3.useState)("");
+  const [resetToken, setResetToken] = (0, import_react3.useState)("");
+  const [newPassword, setNewPassword] = (0, import_react3.useState)("");
+  const [confirmNewPassword, setConfirmNewPassword] = (0, import_react3.useState)("");
+  const [showResetForm, setShowResetForm] = (0, import_react3.useState)(false);
   (0, import_react3.useEffect)(() => {
     const token = localStorage.getItem("auth_token");
     const userData = localStorage.getItem("auth_user");
@@ -23880,6 +23928,15 @@ var SimpleSocialApp = () => {
   };
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (registerData.password !== registerData.confirmPassword) {
+      alert("Le password non coincidono!");
+      return;
+    }
+    const passwordValidation = validatePassword(registerData.password);
+    if (!passwordValidation.isValid) {
+      alert("La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale!");
+      return;
+    }
     try {
       const response = await api.register(
         registerData.username,
@@ -23902,6 +23959,49 @@ var SimpleSocialApp = () => {
     setUser(null);
     setPosts([]);
     setShowLogin(true);
+  };
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.forgotPassword(forgotPasswordEmail);
+      alert("Email di reset inviata! Controlla la tua casella di posta.");
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+    } catch (error) {
+      alert("Errore nell'invio dell'email: " + error.message);
+    }
+  };
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      alert("Le password non coincidono!");
+      return;
+    }
+    try {
+      const response = await api.resetPassword(resetToken, newPassword);
+      alert("Password aggiornata con successo!");
+      setShowResetForm(false);
+      setResetToken("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error) {
+      alert("Errore nel reset della password: " + error.message);
+    }
+  };
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    return {
+      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      minLength: password.length >= minLength,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumbers,
+      hasSpecialChar
+    };
   };
   const handleCreatePost = async () => {
     if (!newPost.trim() && !selectedFile) return;
@@ -24210,17 +24310,43 @@ ${newPost}` : newPost;
         className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
         required: true
       }
-    ), /* @__PURE__ */ import_react3.default.createElement(
+    ), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
-        type: "password",
+        type: showPassword ? "text" : "password",
         placeholder: "Password",
         value: registerData.password,
         onChange: (e) => setRegisterData({ ...registerData, password: e.target.value }),
-        className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+        className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
         required: true
       }
     ), /* @__PURE__ */ import_react3.default.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowPassword(!showPassword),
+        className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+      },
+      showPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+    )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+      "input",
+      {
+        type: showConfirmPassword ? "text" : "password",
+        placeholder: "Conferma Password",
+        value: registerData.confirmPassword,
+        onChange: (e) => setRegisterData({ ...registerData, confirmPassword: e.target.value }),
+        className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+        required: true
+      }
+    ), /* @__PURE__ */ import_react3.default.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowConfirmPassword(!showConfirmPassword),
+        className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+      },
+      showConfirmPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+    )), registerData.password && /* @__PURE__ */ import_react3.default.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "text-xs text-gray-400" }, "Requisiti password:"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: `text-xs flex items-center space-x-2 ${validatePassword(registerData.password).minLength ? "text-green-400" : "text-red-400"}` }, /* @__PURE__ */ import_react3.default.createElement("span", null, validatePassword(registerData.password).minLength ? "\u2713" : "\u2717"), /* @__PURE__ */ import_react3.default.createElement("span", null, "Almeno 8 caratteri")), /* @__PURE__ */ import_react3.default.createElement("div", { className: `text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasUpperCase ? "text-green-400" : "text-red-400"}` }, /* @__PURE__ */ import_react3.default.createElement("span", null, validatePassword(registerData.password).hasUpperCase ? "\u2713" : "\u2717"), /* @__PURE__ */ import_react3.default.createElement("span", null, "Una lettera maiuscola")), /* @__PURE__ */ import_react3.default.createElement("div", { className: `text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasLowerCase ? "text-green-400" : "text-red-400"}` }, /* @__PURE__ */ import_react3.default.createElement("span", null, validatePassword(registerData.password).hasLowerCase ? "\u2713" : "\u2717"), /* @__PURE__ */ import_react3.default.createElement("span", null, "Una lettera minuscola")), /* @__PURE__ */ import_react3.default.createElement("div", { className: `text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasNumbers ? "text-green-400" : "text-red-400"}` }, /* @__PURE__ */ import_react3.default.createElement("span", null, validatePassword(registerData.password).hasNumbers ? "\u2713" : "\u2717"), /* @__PURE__ */ import_react3.default.createElement("span", null, "Un numero")), /* @__PURE__ */ import_react3.default.createElement("div", { className: `text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasSpecialChar ? "text-green-400" : "text-red-400"}` }, /* @__PURE__ */ import_react3.default.createElement("span", null, validatePassword(registerData.password).hasSpecialChar ? "\u2713" : "\u2717"), /* @__PURE__ */ import_react3.default.createElement("span", null, "Un carattere speciale")))), /* @__PURE__ */ import_react3.default.createElement(
       "button",
       {
         type: "submit",
@@ -24237,17 +24363,33 @@ ${newPost}` : newPost;
         className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
         required: true
       }
-    ), /* @__PURE__ */ import_react3.default.createElement(
+    ), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
-        type: "password",
+        type: showPassword ? "text" : "password",
         placeholder: "Password",
         value: loginData.password,
         onChange: (e) => setLoginData({ ...loginData, password: e.target.value }),
-        className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+        className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
         required: true
       }
     ), /* @__PURE__ */ import_react3.default.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowPassword(!showPassword),
+        className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+      },
+      showPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+    )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "text-right" }, /* @__PURE__ */ import_react3.default.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowForgotPassword(true),
+        className: "text-blue-400 hover:text-blue-300 text-sm"
+      },
+      "Password dimenticata?"
+    )), /* @__PURE__ */ import_react3.default.createElement(
       "button",
       {
         type: "submit",
@@ -24510,11 +24652,111 @@ ${newPost}` : newPost;
     },
     /* @__PURE__ */ import_react3.default.createElement(ExternalLink, { className: "w-4 h-4" }),
     /* @__PURE__ */ import_react3.default.createElement("span", null, "Copia Link")
-  )))));
+  )))), showForgotPassword && /* @__PURE__ */ import_react3.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react3.default.createElement("h3", { className: "text-lg font-bold text-white" }, "Password Dimenticata"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowForgotPassword(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\xD7"
+  )), /* @__PURE__ */ import_react3.default.createElement("form", { onSubmit: handleForgotPassword, className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "text-gray-300 text-sm mb-4" }, "Inserisci la tua email per ricevere un link di reset password."), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(Mail, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" }), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "email",
+      placeholder: "Email",
+      value: forgotPasswordEmail,
+      onChange: (e) => setForgotPasswordEmail(e.target.value),
+      className: "w-full pl-12 pr-4 py-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex space-x-3" }, /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowForgotPassword(false),
+      className: "flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+    },
+    "Annulla"
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "submit",
+      className: "flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+    },
+    "Invia Email"
+  ))))), showResetForm && /* @__PURE__ */ import_react3.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react3.default.createElement("h3", { className: "text-lg font-bold text-white" }, "Reset Password"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowResetForm(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\xD7"
+  )), /* @__PURE__ */ import_react3.default.createElement("form", { onSubmit: handleResetPassword, className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "text-gray-300 text-sm mb-4" }, "Inserisci il token ricevuto via email e la nuova password."), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "text",
+      placeholder: "Token di reset",
+      value: resetToken,
+      onChange: (e) => setResetToken(e.target.value),
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showPassword ? "text" : "password",
+      placeholder: "Nuova Password",
+      value: newPassword,
+      onChange: (e) => setNewPassword(e.target.value),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowPassword(!showPassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showConfirmPassword ? "text" : "password",
+      placeholder: "Conferma Nuova Password",
+      value: confirmNewPassword,
+      onChange: (e) => setConfirmNewPassword(e.target.value),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowConfirmPassword(!showConfirmPassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showConfirmPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex space-x-3" }, /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowResetForm(false),
+      className: "flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+    },
+    "Annulla"
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "submit",
+      className: "flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
+    },
+    "Reset Password"
+  ))))));
 };
 var SimpleSocialApp_default = SimpleSocialApp;
 
-// frontend/main.jsx
+// main.jsx
 var container = document.getElementById("root");
 var root = (0, import_client.createRoot)(container);
 root.render(/* @__PURE__ */ import_react4.default.createElement(SimpleSocialApp_default, null));
@@ -24622,6 +24864,22 @@ lucide-react/dist/esm/icons/external-link.js:
    * See the LICENSE file in the root directory of this source tree.
    *)
 
+lucide-react/dist/esm/icons/eye-off.js:
+  (**
+   * @license lucide-react v0.439.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   *)
+
+lucide-react/dist/esm/icons/eye.js:
+  (**
+   * @license lucide-react v0.439.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   *)
+
 lucide-react/dist/esm/icons/heart.js:
   (**
    * @license lucide-react v0.439.0 - ISC
@@ -24631,6 +24889,14 @@ lucide-react/dist/esm/icons/heart.js:
    *)
 
 lucide-react/dist/esm/icons/image.js:
+  (**
+   * @license lucide-react v0.439.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   *)
+
+lucide-react/dist/esm/icons/mail.js:
   (**
    * @license lucide-react v0.439.0 - ISC
    *

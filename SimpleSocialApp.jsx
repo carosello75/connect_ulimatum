@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink } from 'lucide-react';
+import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { api } from './api.js';
 
 const SimpleSocialApp = () => {
@@ -32,8 +32,18 @@ const SimpleSocialApp = () => {
   // Stati per autenticazione
   const [showLogin, setShowLogin] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ username: '', name: '', email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ username: '', name: '', email: '', password: '', confirmPassword: '' });
   const [isRegister, setIsRegister] = useState(false);
+  
+  // Stati per sicurezza password
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showResetForm, setShowResetForm] = useState(false);
 
   // Carica utente al mount
   useEffect(() => {
@@ -111,6 +121,19 @@ const SimpleSocialApp = () => {
   // Registrazione
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    // Validazione password
+    if (registerData.password !== registerData.confirmPassword) {
+      alert('Le password non coincidono!');
+      return;
+    }
+    
+    const passwordValidation = validatePassword(registerData.password);
+    if (!passwordValidation.isValid) {
+      alert('La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale!');
+      return;
+    }
+    
     try {
       const response = await api.register(
         registerData.username,
@@ -135,6 +158,56 @@ const SimpleSocialApp = () => {
     setUser(null);
     setPosts([]);
     setShowLogin(true);
+  };
+
+  // Gestione password dimenticata
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.forgotPassword(forgotPasswordEmail);
+      alert('Email di reset inviata! Controlla la tua casella di posta.');
+      setShowForgotPassword(false);
+      setForgotPasswordEmail('');
+    } catch (error) {
+      alert('Errore nell\'invio dell\'email: ' + error.message);
+    }
+  };
+
+  // Reset password
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      alert('Le password non coincidono!');
+      return;
+    }
+    try {
+      const response = await api.resetPassword(resetToken, newPassword);
+      alert('Password aggiornata con successo!');
+      setShowResetForm(false);
+      setResetToken('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (error) {
+      alert('Errore nel reset della password: ' + error.message);
+    }
+  };
+
+  // Validazione password
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    return {
+      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      minLength: password.length >= minLength,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumbers,
+      hasSpecialChar
+    };
   };
 
   // Crea post
@@ -544,14 +617,70 @@ const SimpleSocialApp = () => {
                 className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
                 required
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={registerData.password}
-                onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Conferma Password"
+                  value={registerData.confirmPassword}
+                  onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              {/* Indicatori validazione password */}
+              {registerData.password && (
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-400">Requisiti password:</div>
+                  <div className="space-y-1">
+                    <div className={`text-xs flex items-center space-x-2 ${validatePassword(registerData.password).minLength ? 'text-green-400' : 'text-red-400'}`}>
+                      <span>{validatePassword(registerData.password).minLength ? '✓' : '✗'}</span>
+                      <span>Almeno 8 caratteri</span>
+                    </div>
+                    <div className={`text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasUpperCase ? 'text-green-400' : 'text-red-400'}`}>
+                      <span>{validatePassword(registerData.password).hasUpperCase ? '✓' : '✗'}</span>
+                      <span>Una lettera maiuscola</span>
+                    </div>
+                    <div className={`text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasLowerCase ? 'text-green-400' : 'text-red-400'}`}>
+                      <span>{validatePassword(registerData.password).hasLowerCase ? '✓' : '✗'}</span>
+                      <span>Una lettera minuscola</span>
+                    </div>
+                    <div className={`text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasNumbers ? 'text-green-400' : 'text-red-400'}`}>
+                      <span>{validatePassword(registerData.password).hasNumbers ? '✓' : '✗'}</span>
+                      <span>Un numero</span>
+                    </div>
+                    <div className={`text-xs flex items-center space-x-2 ${validatePassword(registerData.password).hasSpecialChar ? 'text-green-400' : 'text-red-400'}`}>
+                      <span>{validatePassword(registerData.password).hasSpecialChar ? '✓' : '✗'}</span>
+                      <span>Un carattere speciale</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <button
                 type="submit"
                 className="w-full bg-blue-500 text-white p-3 rounded-lg font-bold hover:bg-blue-600 transition-colors"
@@ -569,14 +698,32 @@ const SimpleSocialApp = () => {
                 className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
                 required
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={loginData.password}
-                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Password dimenticata?
+                </button>
+              </div>
               <button
                 type="submit"
                 className="w-full bg-blue-500 text-white p-3 rounded-lg font-bold hover:bg-blue-600 transition-colors"
@@ -1103,6 +1250,141 @@ const SimpleSocialApp = () => {
                 <span>Copia Link</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Password Dimenticata */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Password Dimenticata</h3>
+              <button
+                onClick={() => setShowForgotPassword(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="text-gray-300 text-sm mb-4">
+                Inserisci la tua email per ricevere un link di reset password.
+              </div>
+              
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Invia Email
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Reset Password */}
+      {showResetForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Reset Password</h3>
+              <button
+                onClick={() => setShowResetForm(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="text-gray-300 text-sm mb-4">
+                Inserisci il token ricevuto via email e la nuova password.
+              </div>
+              
+              <input
+                type="text"
+                placeholder="Token di reset"
+                value={resetToken}
+                onChange={(e) => setResetToken(e.target.value)}
+                className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                required
+              />
+              
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Nuova Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Conferma Nuova Password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowResetForm(false)}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Reset Password
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

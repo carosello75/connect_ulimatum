@@ -36,6 +36,24 @@ if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads/videos');
 }
 
+// Crea tabella per password reset se non esiste
+db.run(`
+  CREATE TABLE IF NOT EXISTS password_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  )
+`, (err) => {
+  if (err) {
+    console.error('Errore nella creazione della tabella password_resets:', err);
+  } else {
+    console.log('Tabella password_resets creata/verificata');
+  }
+});
+
 // Configurazione Multer per upload file
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -912,6 +930,94 @@ app.delete('/api/admin/cleanup-duplicates', (req, res) => {
       deletedRows: this.changes 
     });
   });
+});
+
+// Password dimenticata
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: 'Email richiesta' });
+  }
+  
+  // Verifica se l'utente esiste
+  db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Errore del server' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utente non trovato' });
+    }
+    
+    // Genera token di reset
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600000); // 1 ora
+    
+    // Salva il token nel database
+    db.run(
+      'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [user.id, resetToken, expiresAt.toISOString()],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Errore nel salvare il token' });
+        }
+        
+        // Invia email (per ora simuliamo)
+        console.log(`Reset password token per ${email}: ${resetToken}`);
+        console.log(`Link di reset: ${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`);
+        
+        res.json({ 
+          message: 'Email di reset inviata',
+          token: resetToken // Solo per sviluppo, in produzione non inviare il token
+        });
+      }
+    );
+  });
+});
+
+// Reset password
+app.post('/api/auth/reset-password', (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'Token e nuova password richiesti' });
+  }
+  
+  // Verifica il token
+  db.get(
+    'SELECT * FROM password_resets WHERE token = ? AND expires_at > ?',
+    [token, new Date().toISOString()],
+    (err, reset) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+      
+      if (!reset) {
+        return res.status(400).json({ error: 'Token non valido o scaduto' });
+      }
+      
+      // Hash della nuova password
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      
+      // Aggiorna la password
+      db.run(
+        'UPDATE users SET password = ? WHERE id = ?',
+        [hashedPassword, reset.user_id],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Errore nell\'aggiornare la password' });
+          }
+          
+          // Elimina il token usato
+          db.run('DELETE FROM password_resets WHERE token = ?', [token]);
+          
+          res.json({ message: 'Password aggiornata con successo' });
+        }
+      );
+    }
+  );
 });
 
 // Servi i file statici del frontend

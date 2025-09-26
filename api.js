@@ -49,6 +49,8 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
 export const api = {
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
   register: (username, email, password, name) => request('/api/auth/register', { method: 'POST', body: { username, email, password, name } }),
+  forgotPassword: (email) => request('/api/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (token, newPassword) => request('/api/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
   like: (postId) => request(`/api/posts/${postId}/like`, { method: 'POST', auth: true }),
   comments: (postId) => request(`/api/posts/${postId}/comments`),
