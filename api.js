@@ -16,6 +16,15 @@ function getToken() {
 async function request(path, { method = 'GET', body, auth = false, isFormData = false } = {}) {
   const headers = {};
   
+  // Debug per mobile
+  console.log('Mobile Debug:', {
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+    userAgent: navigator.userAgent,
+    API_BASE,
+    path,
+    method
+  });
+  
   // Se non è FormData, usa JSON
   if (!isFormData) {
     headers['Content-Type'] = 'application/json';
@@ -25,8 +34,17 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
     const token = getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('Token mobile:', token.substring(0, 20) + '...');
+    } else {
+      console.log('Nessun token mobile');
     }
   }
+  
+  console.log('Request mobile:', {
+    url: `${API_BASE}${path}`,
+    headers,
+    body: isFormData ? 'FormData' : (body ? JSON.stringify(body) : undefined)
+  });
   
   const res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -78,7 +96,18 @@ export const api = {
   deletePost: (postId) => request(`/api/posts/${postId}`, { method: 'DELETE', auth: true }),
   profile: (username) => request(`/api/users/profile/${username}`),
   stats: () => request('/api/stats', { auth: true }),
-  addPost: (content) => request('/api/posts', { method: 'POST', body: { content }, auth: true }),
+  addPost: (content, media = null) => {
+    if (media) {
+      // Post con media
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('media', media);
+      return request('/api/posts', { method: 'POST', body: formData, auth: true, isFormData: true });
+    } else {
+      // Post solo testo
+      return request('/api/posts', { method: 'POST', body: { content }, auth: true });
+    }
+  },
   notifications: () => request('/api/notifications', { auth: true }),
 };
 

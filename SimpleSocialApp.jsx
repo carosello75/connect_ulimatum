@@ -396,18 +396,7 @@ const SimpleSocialApp = () => {
       
       if (selectedFile) {
         // Post con media
-        const formData = new FormData();
-        formData.append('content', fullContent);
-        formData.append('media', selectedFile);
-        
-        const token = localStorage.getItem('auth_token');
-        const response = await fetch('http://localhost:3001/api/posts', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        });
-        
-        if (!response.ok) throw new Error('Errore nel caricamento');
+        await api.addPost(fullContent, selectedFile);
       } else {
         // Post solo testo
         await api.addPost(fullContent);
