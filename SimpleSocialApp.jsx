@@ -921,7 +921,7 @@ const SimpleSocialApp = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <header className="border-b border-gray-800 p-4">
+      <header className="mobile-header border-b border-gray-800 p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -929,23 +929,23 @@ const SimpleSocialApp = () => {
             </div>
             <h1 className="text-xl font-bold text-blue-400">Connect</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm">{user?.name}</span>
+          <div className="flex items-center space-x-2 mobile-text">
+            <span className="text-sm hidden md:block">{user?.name}</span>
             <button
               onClick={() => setShowSettings(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+              className="mobile-button bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
             >
-              ⚙️ Impostazioni
+              ⚙️
             </button>
             <button
               onClick={() => setShowDeleteAccount(true)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              className="mobile-button bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"
             >
-              Elimina Account
+              🗑️
             </button>
             <button
               onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              className="mobile-button bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
             >
               Logout
             </button>
@@ -953,9 +953,9 @@ const SimpleSocialApp = () => {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto flex">
+      <div className="max-w-6xl mx-auto mobile-grid flex">
         {/* Sidebar sinistra - Notifiche */}
-        <div className="w-80 p-4 border-r border-gray-800">
+        <div className="mobile-sidebar w-80 p-4 border-r border-gray-800">
           <div className="flex items-center space-x-2 mb-4">
             <Bell className="w-5 h-5" />
             <h2 className="text-lg font-bold">Notifiche</h2>
@@ -1006,9 +1006,9 @@ const SimpleSocialApp = () => {
         </div>
 
         {/* Contenuto principale */}
-        <div className="flex-1 p-4">
+        <div className="mobile-main flex-1 p-4">
         {/* Form per nuovo post */}
-        <div className="bg-gray-900 p-4 rounded-lg mb-6">
+        <div className="mobile-form bg-gray-900 p-4 rounded-lg mb-6">
           <div className="flex items-start space-x-3">
             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
@@ -1134,7 +1134,7 @@ const SimpleSocialApp = () => {
         ) : (
           <div className="space-y-4">
             {posts.map((post) => (
-              <div key={post.id} className="bg-gray-900 p-4 rounded-lg group">
+              <div key={post.id} className="mobile-post bg-gray-900 p-4 rounded-lg group">
                 <div className="flex items-start space-x-3">
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                     {post.name?.charAt(0) || 'U'}
