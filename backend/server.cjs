@@ -71,6 +71,51 @@ db.run(`
   }
 });
 
+// Aggiungi colonne mancanti alla tabella users se non esistono
+const addColumnIfNotExists = (columnName, columnDefinition) => {
+  return new Promise((resolve, reject) => {
+    db.get(`PRAGMA table_info(users)`, (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      db.all(`PRAGMA table_info(users)`, (err, columns) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        const columnExists = columns.some(col => col.name === columnName);
+        if (!columnExists) {
+          db.run(`ALTER TABLE users ADD COLUMN ${columnName} ${columnDefinition}`, (err) => {
+            if (err) {
+              console.error(`Errore nell'aggiungere la colonna ${columnName}:`, err);
+            } else {
+              console.log(`Colonna ${columnName} aggiunta alla tabella users`);
+            }
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
+    });
+  });
+};
+
+// Aggiungi colonne per il profilo
+Promise.all([
+  addColumnIfNotExists('bio', 'TEXT'),
+  addColumnIfNotExists('website', 'TEXT'),
+  addColumnIfNotExists('location', 'TEXT'),
+  addColumnIfNotExists('avatar', 'TEXT')
+]).then(() => {
+  console.log('Colonne profilo aggiunte/verificate');
+}).catch(err => {
+  console.error('Errore nell\'aggiunta delle colonne:', err);
+});
+
 // Configurazione Multer per upload file
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -1098,6 +1143,151 @@ app.post('/api/auth/delete-account', authenticateToken, (req, res) => {
         res.json({ message: 'Account eliminato con successo' });
       });
     });
+  });
+});
+
+// Aggiorna profilo
+app.post('/api/profile/update', authenticateToken, upload.single('image'), (req, res) => {
+  const userId = req.user.id;
+  const { name, username, email, bio, website, location } = req.body;
+  
+  // Verifica se l'username è già in uso da altri utenti
+  if (username) {
+    db.get('SELECT id FROM users WHERE username = ? AND id != ?', [username, userId], (err, existingUser) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+      
+      if (existingUser) {
+        return res.status(400).json({ error: 'Username già in uso' });
+      }
+      
+      // Verifica se l'email è già in uso da altri utenti
+      if (email) {
+        db.get('SELECT id FROM users WHERE email = ? AND id != ?', [email, userId], (err, existingEmail) => {
+          if (err) {
+            return res.status(500).json({ error: 'Errore del server' });
+          }
+          
+          if (existingEmail) {
+            return res.status(400).json({ error: 'Email già in uso' });
+          }
+          
+          updateProfile();
+        });
+      } else {
+        updateProfile();
+      }
+    });
+  } else {
+    updateProfile();
+  }
+  
+  function updateProfile() {
+    let updateFields = [];
+    let values = [];
+    
+    if (name) {
+      updateFields.push('name = ?');
+      values.push(name);
+    }
+    if (username) {
+      updateFields.push('username = ?');
+      values.push(username);
+    }
+    if (email) {
+      updateFields.push('email = ?');
+      values.push(email);
+    }
+    if (bio !== undefined) {
+      updateFields.push('bio = ?');
+      values.push(bio);
+    }
+    if (website !== undefined) {
+      updateFields.push('website = ?');
+      values.push(website);
+    }
+    if (location !== undefined) {
+      updateFields.push('location = ?');
+      values.push(location);
+    }
+    
+    // Gestisci immagine profilo
+    if (req.file) {
+      const imageUrl = `/uploads/images/${req.file.filename}`;
+      updateFields.push('avatar = ?');
+      values.push(imageUrl);
+    }
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'Nessun campo da aggiornare' });
+    }
+    
+    values.push(userId);
+    
+    const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+    
+    db.run(query, values, function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Errore nell\'aggiornamento del profilo' });
+      }
+      
+      // Recupera l'utente aggiornato
+      db.get('SELECT * FROM users WHERE id = ?', [userId], (err, updatedUser) => {
+        if (err) {
+          return res.status(500).json({ error: 'Errore nel recupero dell\'utente' });
+        }
+        
+        // Rimuovi la password dalla risposta
+        delete updatedUser.password;
+        
+        res.json({ 
+          message: 'Profilo aggiornato con successo',
+          user: updatedUser
+        });
+      });
+    });
+  }
+});
+
+// Cambia password
+app.post('/api/auth/change-password', authenticateToken, (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Password attuale e nuova password richieste' });
+  }
+  
+  // Verifica la password attuale
+  db.get('SELECT password FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Errore del server' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utente non trovato' });
+    }
+    
+    if (!bcrypt.compareSync(currentPassword, user.password)) {
+      return res.status(401).json({ error: 'Password attuale non corretta' });
+    }
+    
+    // Hash della nuova password
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    
+    // Aggiorna la password
+    db.run(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashedPassword, userId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Errore nell\'aggiornamento della password' });
+        }
+        
+        res.json({ message: 'Password aggiornata con successo' });
+      }
+    );
   });
 });
 

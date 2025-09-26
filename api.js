@@ -52,6 +52,15 @@ export const api = {
   forgotPassword: (email) => request('/api/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (token, newPassword) => request('/api/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
   deleteAccount: (password, reason) => request('/api/auth/delete-account', { method: 'POST', body: { password, reason }, auth: true }),
+  updateProfile: (profileData, image) => {
+    const formData = new FormData();
+    Object.keys(profileData).forEach(key => {
+      if (profileData[key]) formData.append(key, profileData[key]);
+    });
+    if (image) formData.append('image', image);
+    return request('/api/profile/update', { method: 'POST', body: formData, auth: true, isFormData: true });
+  },
+  changePassword: (currentPassword, newPassword) => request('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword }, auth: true }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
   like: (postId) => request(`/api/posts/${postId}/like`, { method: 'POST', auth: true }),
   comments: (postId) => request(`/api/posts/${postId}/comments`),

@@ -51,13 +51,41 @@ const SimpleSocialApp = () => {
   const [deleteCustomReason, setDeleteCustomReason] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+  
+  // Stati per impostazioni profilo
+  const [showSettings, setShowSettings] = useState(false);
+  const [profileSettings, setProfileSettings] = useState({
+    name: '',
+    username: '',
+    email: '',
+    bio: '',
+    website: '',
+    location: ''
+  });
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
   // Carica utente al mount
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('auth_user');
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const user = JSON.parse(userData);
+      setUser(user);
+      setProfileSettings({
+        name: user.name || '',
+        username: user.username || '',
+        email: user.email || '',
+        bio: user.bio || '',
+        website: user.website || '',
+        location: user.location || ''
+      });
       loadPosts();
       loadNotifications();
       loadOnlineUsers();
@@ -255,6 +283,56 @@ const SimpleSocialApp = () => {
       setDeletePassword('');
     } catch (error) {
       alert('Errore nell\'eliminazione dell\'account: ' + error.message);
+    }
+  };
+
+  // Gestione immagine profilo
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setProfileImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Salva impostazioni profilo
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.updateProfile(profileSettings, profileImage);
+      alert('Profilo aggiornato con successo');
+      setUser(response.user);
+      localStorage.setItem('auth_user', JSON.stringify(response.user));
+      setShowSettings(false);
+    } catch (error) {
+      alert('Errore nell\'aggiornamento del profilo: ' + error.message);
+    }
+  };
+
+  // Cambia password
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      alert('Le password non coincidono');
+      return;
+    }
+    
+    const passwordValidation = validatePassword(changePasswordData.newPassword);
+    if (!passwordValidation.isValid) {
+      alert('La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale!');
+      return;
+    }
+    
+    try {
+      const response = await api.changePassword(changePasswordData.currentPassword, changePasswordData.newPassword);
+      alert('Password cambiata con successo');
+      setShowChangePassword(false);
+      setChangePasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      alert('Errore nel cambio password: ' + error.message);
     }
   };
 
@@ -807,6 +885,12 @@ const SimpleSocialApp = () => {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm">{user?.name}</span>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              ⚙️ Impostazioni
+            </button>
             <button
               onClick={() => setShowDeleteAccount(true)}
               className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
@@ -1529,6 +1613,295 @@ const SimpleSocialApp = () => {
                   className="flex-1 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition-colors"
                 >
                   Elimina Definitivamente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Impostazioni Profilo */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">⚙️ Impostazioni Profilo</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Sezione Informazioni Personali */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-blue-400">Informazioni Personali</h4>
+                
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  {/* Foto Profilo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Foto Profilo
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center overflow-hidden">
+                        {profileImagePreview ? (
+                          <img src={profileImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : user?.avatar ? (
+                          <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white text-xl">{user?.name?.charAt(0) || 'U'}</span>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfileImageChange}
+                        className="hidden"
+                        id="profile-image"
+                      />
+                      <label
+                        htmlFor="profile-image"
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
+                      >
+                        Cambia Foto
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {/* Nome */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Nome Completo
+                    </label>
+                    <input
+                      type="text"
+                      value={profileSettings.name}
+                      onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  
+                  {/* Username */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      value={profileSettings.username}
+                      onChange={(e) => setProfileSettings({...profileSettings, username: e.target.value})}
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profileSettings.email}
+                      onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Bio
+                    </label>
+                    <textarea
+                      value={profileSettings.bio}
+                      onChange={(e) => setProfileSettings({...profileSettings, bio: e.target.value})}
+                      placeholder="Racconta qualcosa di te..."
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none h-20 resize-none"
+                    />
+                  </div>
+                  
+                  {/* Website */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      value={profileSettings.website}
+                      onChange={(e) => setProfileSettings({...profileSettings, website: e.target.value})}
+                      placeholder="https://..."
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Località
+                    </label>
+                    <input
+                      type="text"
+                      value={profileSettings.location}
+                      onChange={(e) => setProfileSettings({...profileSettings, location: e.target.value})}
+                      placeholder="Città, Paese"
+                      className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    💾 Salva Profilo
+                  </button>
+                </form>
+              </div>
+              
+              {/* Sezione Sicurezza */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-red-400">Sicurezza</h4>
+                
+                {/* Cambia Password */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h5 className="text-md font-medium text-white mb-3">Cambia Password</h5>
+                  <button
+                    onClick={() => setShowChangePassword(true)}
+                    className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+                  >
+                    🔒 Cambia Password
+                  </button>
+                </div>
+                
+                {/* Elimina Account */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h5 className="text-md font-medium text-white mb-3">Elimina Account</h5>
+                  <p className="text-gray-400 text-sm mb-3">
+                    Elimina permanentemente il tuo account e tutti i dati associati.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowSettings(false);
+                      setShowDeleteAccount(true);
+                    }}
+                    className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    🗑️ Elimina Account
+                  </button>
+                </div>
+                
+                {/* Statistiche Account */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h5 className="text-md font-medium text-white mb-3">Statistiche Account</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Post pubblicati:</span>
+                      <span className="text-white">{user?.posts_count || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Commenti:</span>
+                      <span className="text-white">{user?.comments_count || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Like ricevuti:</span>
+                      <span className="text-white">{user?.likes_count || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Membro dal:</span>
+                      <span className="text-white">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Cambia Password */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">🔒 Cambia Password</h3>
+              <button
+                onClick={() => setShowChangePassword(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password Attuale"
+                  value={changePasswordData.currentPassword}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, currentPassword: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Nuova Password"
+                  value={changePasswordData.newPassword}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, newPassword: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Conferma Nuova Password"
+                  value={changePasswordData.confirmPassword}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, confirmPassword: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(false)}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Cambia Password
                 </button>
               </div>
             </form>

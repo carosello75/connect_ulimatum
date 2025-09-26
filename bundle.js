@@ -23823,6 +23823,15 @@ var api = {
   forgotPassword: (email) => request("/api/auth/forgot-password", { method: "POST", body: { email } }),
   resetPassword: (token, newPassword) => request("/api/auth/reset-password", { method: "POST", body: { token, newPassword } }),
   deleteAccount: (password, reason) => request("/api/auth/delete-account", { method: "POST", body: { password, reason }, auth: true }),
+  updateProfile: (profileData, image) => {
+    const formData = new FormData();
+    Object.keys(profileData).forEach((key) => {
+      if (profileData[key]) formData.append(key, profileData[key]);
+    });
+    if (image) formData.append("image", image);
+    return request("/api/profile/update", { method: "POST", body: formData, auth: true, isFormData: true });
+  },
+  changePassword: (currentPassword, newPassword) => request("/api/auth/change-password", { method: "POST", body: { currentPassword, newPassword }, auth: true }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
   like: (postId) => request(`/api/posts/${postId}/like`, { method: "POST", auth: true }),
   comments: (postId) => request(`/api/posts/${postId}/comments`),
@@ -23870,11 +23879,37 @@ var SimpleSocialApp = () => {
   const [deleteCustomReason, setDeleteCustomReason] = (0, import_react3.useState)("");
   const [deletePassword, setDeletePassword] = (0, import_react3.useState)("");
   const [showDeletePassword, setShowDeletePassword] = (0, import_react3.useState)(false);
+  const [showSettings, setShowSettings] = (0, import_react3.useState)(false);
+  const [profileSettings, setProfileSettings] = (0, import_react3.useState)({
+    name: "",
+    username: "",
+    email: "",
+    bio: "",
+    website: "",
+    location: ""
+  });
+  const [profileImage, setProfileImage] = (0, import_react3.useState)(null);
+  const [profileImagePreview, setProfileImagePreview] = (0, import_react3.useState)(null);
+  const [showChangePassword, setShowChangePassword] = (0, import_react3.useState)(false);
+  const [changePasswordData, setChangePasswordData] = (0, import_react3.useState)({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
   (0, import_react3.useEffect)(() => {
     const token = localStorage.getItem("auth_token");
     const userData = localStorage.getItem("auth_user");
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const user2 = JSON.parse(userData);
+      setUser(user2);
+      setProfileSettings({
+        name: user2.name || "",
+        username: user2.username || "",
+        email: user2.email || "",
+        bio: user2.bio || "",
+        website: user2.website || "",
+        location: user2.location || ""
+      });
       loadPosts();
       loadNotifications();
       loadOnlineUsers();
@@ -24039,6 +24074,47 @@ Motivo: ${finalReason}`)) {
       setDeletePassword("");
     } catch (error) {
       alert("Errore nell'eliminazione dell'account: " + error.message);
+    }
+  };
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onload = (e2) => setProfileImagePreview(e2.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.updateProfile(profileSettings, profileImage);
+      alert("Profilo aggiornato con successo");
+      setUser(response.user);
+      localStorage.setItem("auth_user", JSON.stringify(response.user));
+      setShowSettings(false);
+    } catch (error) {
+      alert("Errore nell'aggiornamento del profilo: " + error.message);
+    }
+  };
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      alert("Le password non coincidono");
+      return;
+    }
+    const passwordValidation = validatePassword(changePasswordData.newPassword);
+    if (!passwordValidation.isValid) {
+      alert("La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale!");
+      return;
+    }
+    try {
+      const response = await api.changePassword(changePasswordData.currentPassword, changePasswordData.newPassword);
+      alert("Password cambiata con successo");
+      setShowChangePassword(false);
+      setChangePasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      alert("Errore nel cambio password: " + error.message);
     }
   };
   const handleCreatePost = async () => {
@@ -24444,6 +24520,13 @@ ${newPost}` : newPost;
     ))));
   }
   return /* @__PURE__ */ import_react3.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react3.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "max-w-6xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react3.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-sm" }, user?.name), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowSettings(true),
+      className: "bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+    },
+    "\u2699\uFE0F Impostazioni"
+  ), /* @__PURE__ */ import_react3.default.createElement(
     "button",
     {
       onClick: () => setShowDeleteAccount(true),
@@ -24861,6 +24944,179 @@ ${newPost}` : newPost;
       className: "flex-1 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition-colors"
     },
     "Elimina Definitivamente"
+  ))))), showSettings && /* @__PURE__ */ import_react3.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ import_react3.default.createElement("h3", { className: "text-xl font-bold text-white" }, "\u2699\uFE0F Impostazioni Profilo"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowSettings(false),
+      className: "text-gray-400 hover:text-white text-2xl"
+    },
+    "\xD7"
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("h4", { className: "text-lg font-semibold text-blue-400" }, "Informazioni Personali"), /* @__PURE__ */ import_react3.default.createElement("form", { onSubmit: handleSaveProfile, className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Foto Profilo"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center overflow-hidden" }, profileImagePreview ? /* @__PURE__ */ import_react3.default.createElement("img", { src: profileImagePreview, alt: "Preview", className: "w-full h-full object-cover" }) : user?.avatar ? /* @__PURE__ */ import_react3.default.createElement("img", { src: user.avatar, alt: "Avatar", className: "w-full h-full object-cover" }) : /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white text-xl" }, user?.name?.charAt(0) || "U")), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "file",
+      accept: "image/*",
+      onChange: handleProfileImageChange,
+      className: "hidden",
+      id: "profile-image"
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "label",
+    {
+      htmlFor: "profile-image",
+      className: "bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
+    },
+    "Cambia Foto"
+  ))), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Nome Completo"), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.name,
+      onChange: (e) => setProfileSettings({ ...profileSettings, name: e.target.value }),
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Username"), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.username,
+      onChange: (e) => setProfileSettings({ ...profileSettings, username: e.target.value }),
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Email"), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "email",
+      value: profileSettings.email,
+      onChange: (e) => setProfileSettings({ ...profileSettings, email: e.target.value }),
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Bio"), /* @__PURE__ */ import_react3.default.createElement(
+    "textarea",
+    {
+      value: profileSettings.bio,
+      onChange: (e) => setProfileSettings({ ...profileSettings, bio: e.target.value }),
+      placeholder: "Racconta qualcosa di te...",
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none h-20 resize-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Website"), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "url",
+      value: profileSettings.website,
+      onChange: (e) => setProfileSettings({ ...profileSettings, website: e.target.value }),
+      placeholder: "https://...",
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Localit\xE0"), /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.location,
+      onChange: (e) => setProfileSettings({ ...profileSettings, location: e.target.value }),
+      placeholder: "Citt\xE0, Paese",
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "submit",
+      className: "w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
+    },
+    "\u{1F4BE} Salva Profilo"
+  ))), /* @__PURE__ */ import_react3.default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("h4", { className: "text-lg font-semibold text-red-400" }, "Sicurezza"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-800 rounded-lg p-4" }, /* @__PURE__ */ import_react3.default.createElement("h5", { className: "text-md font-medium text-white mb-3" }, "Cambia Password"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowChangePassword(true),
+      className: "w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+    },
+    "\u{1F512} Cambia Password"
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-800 rounded-lg p-4" }, /* @__PURE__ */ import_react3.default.createElement("h5", { className: "text-md font-medium text-white mb-3" }, "Elimina Account"), /* @__PURE__ */ import_react3.default.createElement("p", { className: "text-gray-400 text-sm mb-3" }, "Elimina permanentemente il tuo account e tutti i dati associati."), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => {
+        setShowSettings(false);
+        setShowDeleteAccount(true);
+      },
+      className: "w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors"
+    },
+    "\u{1F5D1}\uFE0F Elimina Account"
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-800 rounded-lg p-4" }, /* @__PURE__ */ import_react3.default.createElement("h5", { className: "text-md font-medium text-white mb-3" }, "Statistiche Account"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-gray-400" }, "Post pubblicati:"), /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white" }, user?.posts_count || 0)), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-gray-400" }, "Commenti:"), /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white" }, user?.comments_count || 0)), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-gray-400" }, "Like ricevuti:"), /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white" }, user?.likes_count || 0)), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-gray-400" }, "Membro dal:"), /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white" }, user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A")))))))), showChangePassword && /* @__PURE__ */ import_react3.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react3.default.createElement("h3", { className: "text-lg font-bold text-white" }, "\u{1F512} Cambia Password"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowChangePassword(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\xD7"
+  )), /* @__PURE__ */ import_react3.default.createElement("form", { onSubmit: handleChangePassword, className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showPassword ? "text" : "password",
+      placeholder: "Password Attuale",
+      value: changePasswordData.currentPassword,
+      onChange: (e) => setChangePasswordData({ ...changePasswordData, currentPassword: e.target.value }),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowPassword(!showPassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showConfirmPassword ? "text" : "password",
+      placeholder: "Nuova Password",
+      value: changePasswordData.newPassword,
+      onChange: (e) => setChangePasswordData({ ...changePasswordData, newPassword: e.target.value }),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowConfirmPassword(!showConfirmPassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showConfirmPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showConfirmPassword ? "text" : "password",
+      placeholder: "Conferma Nuova Password",
+      value: changePasswordData.confirmPassword,
+      onChange: (e) => setChangePasswordData({ ...changePasswordData, confirmPassword: e.target.value }),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowConfirmPassword(!showConfirmPassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showConfirmPassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex space-x-3" }, /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowChangePassword(false),
+      className: "flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+    },
+    "Annulla"
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "submit",
+      className: "flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+    },
+    "Cambia Password"
   ))))));
 };
 var SimpleSocialApp_default = SimpleSocialApp;
