@@ -24018,8 +24018,7 @@ var SimpleSocialApp = () => {
   const loadNotifications = async () => {
     try {
       console.log("\u{1F514} Loading notifications...");
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/notifications`, {
         method: "GET",
         headers: {
@@ -24042,8 +24041,7 @@ var SimpleSocialApp = () => {
   const loadOnlineUsers = async () => {
     try {
       console.log("\u{1F465} Loading online users...");
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/online-users`, {
         method: "GET",
         headers: {
@@ -24078,8 +24076,7 @@ var SimpleSocialApp = () => {
     try {
       setLoading(true);
       console.log("\u{1F4DD} Loading posts...");
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         method: "GET",
         headers: {
@@ -24139,7 +24136,15 @@ var SimpleSocialApp = () => {
       localStorage.setItem("auth_user", JSON.stringify(data.user));
       setUser(data.user);
       setShowLogin(false);
-      loadPosts();
+      console.log("\u{1F504} Forzando refresh dell'app...");
+      setTimeout(() => {
+        console.log("\u{1F4DD} Caricando post...");
+        loadPosts();
+        console.log("\u{1F514} Caricando notifiche...");
+        loadNotifications();
+        console.log("\u{1F465} Caricando utenti online...");
+        loadOnlineUsers();
+      }, 100);
       alert("Login effettuato con successo!");
     } catch (error) {
       console.error("\u274C Login error:", error);
@@ -24326,8 +24331,7 @@ ${generatedDescription}
 ---
 
 ${newPost}` : newPost;
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       if (selectedFile) {
         const formData = new FormData();
         formData.append("content", fullContent);
@@ -24533,8 +24537,7 @@ ${newPost}` : newPost;
   const loadComments = async (postId) => {
     try {
       console.log("\u{1F4AC} Loading comments for post:", postId);
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: "GET",
         headers: {
@@ -24558,8 +24561,7 @@ ${newPost}` : newPost;
     if (!newComment.trim()) return;
     try {
       console.log("\u{1F4AC} Adding comment to post:", postId);
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: "POST",
         headers: {
@@ -24588,8 +24590,7 @@ ${newPost}` : newPost;
     if (!confirm("Sei sicuro di voler eliminare questo commento?")) return;
     try {
       console.log("\u{1F5D1}\uFE0F Deleting comment:", commentId);
-      const isRailway = window.location.hostname === "web-production-54984.up.railway.app";
-      const apiBase = isRailway ? "https://web-production-54984.up.railway.app" : "http://localhost:3001";
+      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
       const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
         method: "DELETE",
         headers: {
