@@ -168,44 +168,71 @@ const SimpleSocialApp = () => {
     }
   };
 
-  // Login
+  // Login - Paradigma semplificato per mobile
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    // Validazione input
+    if (!loginData.email || !loginData.password) {
+      alert('Inserisci email e password');
+      return;
+    }
+    
+    // Mostra loading
+    setLoading(true);
+    
     try {
-      console.log('Login attempt mobile:', {
+      console.log('🔐 Login attempt:', {
         email: loginData.email,
-        password: loginData.password ? '***' : 'empty',
         isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-        userAgent: navigator.userAgent,
         timestamp: new Date().toISOString()
       });
       
-      // Validazione input
-      if (!loginData.email || !loginData.password) {
-        alert('Inserisci email e password');
-        return;
+      // Chiamata API diretta per evitare problemi di routing
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      console.log('🌐 API Base:', apiBase);
+      
+      const response = await fetch(`${apiBase}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password
+        })
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Credenziali non valide');
       }
       
-      const response = await api.login(loginData.email, loginData.password);
-      console.log('Login success mobile:', {
-        user: response.user?.name,
-        token: response.token ? 'present' : 'missing',
-        timestamp: new Date().toISOString()
+      const data = await response.json();
+      console.log('✅ Login success:', {
+        user: data.user?.name,
+        token: data.token ? 'present' : 'missing'
       });
       
-      localStorage.setItem('auth_token', response.token);
-      localStorage.setItem('auth_user', JSON.stringify(response.user));
-      setUser(response.user);
+      // Salva i dati
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+      setUser(data.user);
       setShowLogin(false);
       loadPosts();
+      
+      alert('Login effettuato con successo!');
+      
     } catch (error) {
-      console.error('Login error mobile:', {
-        error: error.message,
-        status: error.status,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      });
+      console.error('❌ Login error:', error);
       alert('Errore nel login: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -415,17 +442,66 @@ const SimpleSocialApp = () => {
     if (!newPost.trim() && !selectedFile) return;
     
     try {
+      setLoading(true);
+      console.log('📝 Creating post:', {
+        hasContent: !!newPost.trim(),
+        hasFile: !!selectedFile,
+        fileName: selectedFile?.name,
+        fileSize: selectedFile?.size
+      });
+      
       // Prepara il contenuto con titolo e descrizione
       const fullContent = generatedTitle && generatedDescription 
         ? `${generatedTitle}\n\n${generatedDescription}\n\n---\n\n${newPost}`
         : newPost;
       
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
       if (selectedFile) {
-        // Post con media
-        await api.addPost(fullContent, selectedFile);
+        // Post con media - chiamata diretta
+        const formData = new FormData();
+        formData.append('content', fullContent);
+        formData.append('media', selectedFile);
+        
+        console.log('📤 Uploading file:', selectedFile.name);
+        
+        const response = await fetch(`${apiBase}/api/posts`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: formData
+        });
+        
+        console.log('📡 Upload response status:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Errore nel caricamento del file');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Post con media creato:', result);
       } else {
-        // Post solo testo
-        await api.addPost(fullContent);
+        // Post solo testo - chiamata diretta
+        const response = await fetch(`${apiBase}/api/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ content: fullContent })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Errore nella creazione del post');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Post creato:', result);
       }
       
       setNewPost('');
@@ -434,8 +510,14 @@ const SimpleSocialApp = () => {
       setGeneratedTitle('');
       setGeneratedDescription('');
       loadPosts();
+      
+      alert('Post pubblicato con successo!');
+      
     } catch (error) {
+      console.error('❌ Errore nella creazione del post:', error);
       alert('Errore nella creazione del post: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -443,9 +525,25 @@ const SimpleSocialApp = () => {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('File selezionato:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      // Validazione dimensione (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File troppo grande! Massimo 10MB');
+        return;
+      }
+      
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onload = (e) => setFilePreview(e.target.result);
+      reader.onload = (e) => {
+        setFilePreview(e.target.result);
+        console.log('Preview generato:', e.target.result.substring(0, 50) + '...');
+      };
       reader.readAsDataURL(file);
       
       // Genera automaticamente titolo e descrizione per i media
