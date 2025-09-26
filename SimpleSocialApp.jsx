@@ -2179,6 +2179,61 @@ const SimpleSocialApp = () => {
           </div>
         </div>
       )}
+      
+      {/* Sidebar Mobile Bottom - Notifiche e Utenti Online */}
+      <div className="mobile-sidebar block md:hidden">
+        {/* Notifiche a sinistra */}
+        <div className="mobile-notifications">
+          <div className="flex items-center space-x-1 mb-2">
+            <Bell className="w-4 h-4 text-blue-400" />
+            <h3 className="text-xs font-bold text-white">Notifiche</h3>
+          </div>
+          <div className="space-y-2">
+            {notifications.length > 0 ? (
+              notifications.slice(0, 3).map((notification) => (
+                <div key={notification.id} className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    notification.type === 'like' ? 'bg-red-500' :
+                    notification.type === 'comment' ? 'bg-blue-500' :
+                    notification.type === 'follow' ? 'bg-green-500' : 'bg-purple-500'
+                  }`}></div>
+                  <span className="text-xs text-gray-300 truncate">{notification.message}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-500 py-2">
+                <Bell className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                <p className="text-xs">Nessuna notifica</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Utenti Online a destra */}
+        <div className="mobile-online">
+          <div className="flex items-center space-x-1 mb-2">
+            <Users className="w-4 h-4 text-green-400" />
+            <h3 className="text-xs font-bold text-white">Online</h3>
+          </div>
+          <div className="space-y-2">
+            {onlineUsers.length > 0 ? (
+              onlineUsers.slice(0, 3).map((onlineUser) => (
+                <div key={onlineUser.id} className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                    {onlineUser.name?.charAt(0) || 'U'}
+                  </div>
+                  <span className="text-xs text-gray-300 truncate">{onlineUser.name}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-500 py-2">
+                <Users className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                <p className="text-xs">Nessun utente</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
