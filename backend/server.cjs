@@ -1307,17 +1307,38 @@ app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image
 // Pagina reset password
 app.get('/reset-password', (req, res) => {
   const token = req.query.token;
+  console.log('Reset password richiesto con token:', token);
+  
   if (!token) {
     return res.status(400).send('Token di reset mancante');
   }
   
   // Verifica se il token esiste e non è scaduto
   db.get(
-    'SELECT * FROM password_resets WHERE token = ? AND expires_at > datetime("now")',
+    'SELECT * FROM password_resets WHERE token = ?',
     [token],
     (err, reset) => {
-      if (err || !reset) {
-        return res.status(400).send('Token non valido o scaduto');
+      console.log('Token trovato nel database:', reset);
+      
+      if (err) {
+        console.error('Errore nel database:', err);
+        return res.status(500).send('Errore del server');
+      }
+      
+      if (!reset) {
+        console.log('Token non trovato nel database');
+        return res.status(400).send('Token non valido');
+      }
+      
+      // Verifica se il token è scaduto
+      const now = new Date();
+      const expiresAt = new Date(reset.expires_at);
+      console.log('Token scade il:', expiresAt);
+      console.log('Ora è:', now);
+      
+      if (now > expiresAt) {
+        console.log('Token scaduto');
+        return res.status(400).send('Token scaduto');
       }
       
       // Mostra la pagina di reset password
