@@ -1492,7 +1492,16 @@ app.post('/api/auth/change-password', authenticateToken, (req, res) => {
 app.use(express.static('.'));
 
 // Route per servire l'index.html per tutte le route non-API
-app.get('*', (req, res) => {
+app.get('*', (req, res, next) => {
+  // Se è una route API, passa al prossimo middleware
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  // Se è un file statico, passa al prossimo middleware
+  if (req.path.includes('.')) {
+    return next();
+  }
+  // Altrimenti serve l'index.html
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 

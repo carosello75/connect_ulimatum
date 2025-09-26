@@ -264,8 +264,10 @@ const SimpleSocialApp = () => {
         timestamp: new Date().toISOString()
       });
       
-      // Usa sempre localhost per il test locale
-      const apiBase = 'http://localhost:3001';
+    // Determina l'API base dinamicamente
+    const apiBase = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001' 
+      : 'https://web-production-54984.up.railway.app';
       
       console.log('🌐 API Base:', apiBase);
       
