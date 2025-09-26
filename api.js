@@ -5,11 +5,32 @@ const API_BASE = (typeof window !== 'undefined' && window.API_BASE) ||
     : 'http://localhost:3001');
 
 function getToken() {
-  return localStorage.getItem('auth_token') || '';
+  try {
+    const token = localStorage.getItem('auth_token') || '';
+    console.log('getToken debug:', {
+      token: token ? token.substring(0, 20) + '...' : 'null',
+      localStorageAvailable: typeof localStorage !== 'undefined',
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    });
+    return token;
+  } catch (error) {
+    console.error('Errore nel getToken:', error);
+    return '';
+  }
 }
 
 async function request(path, { method = 'GET', body, auth = false, isFormData = false } = {}) {
   const headers = {};
+  
+  // Debug per mobile
+  console.log('API Request Debug:', {
+    path,
+    method,
+    auth,
+    isFormData,
+    userAgent: navigator.userAgent,
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  });
   
   // Se non è FormData, usa JSON
   if (!isFormData) {
