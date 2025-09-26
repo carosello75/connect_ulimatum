@@ -8,15 +8,21 @@ const API_BASE = (typeof window !== 'undefined' && window.API_BASE) ||
 const getApiBase = () => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
   console.log('API Base Debug:', {
     isMobile,
     isRailway,
+    isLocalhost,
     hostname: window.location.hostname,
+    protocol: window.location.protocol,
     API_BASE
   });
   
-  if (isRailway) {
+  // Forza Railway per mobile se non siamo in localhost
+  if (isMobile && !isLocalhost) {
+    return 'https://web-production-54984.up.railway.app';
+  } else if (isRailway) {
     return 'https://web-production-54984.up.railway.app';
   } else {
     return 'http://localhost:3001';
@@ -87,6 +93,15 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
         const json = await res.json(); 
         detail = json.error || json.message || detail;
         console.log('Error response:', json);
+        
+        // Gestione specifica per credenziali non valide
+        if (res.status === 401) {
+          detail = 'Credenziali non valide';
+        } else if (res.status === 404) {
+          detail = 'Utente non trovato';
+        } else if (res.status === 500) {
+          detail = 'Errore del server';
+        }
       } catch (e) {
         console.log('Error parsing response:', e);
         detail = `HTTP ${res.status}: ${res.statusText}`;

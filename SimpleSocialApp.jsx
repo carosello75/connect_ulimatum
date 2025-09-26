@@ -174,12 +174,24 @@ const SimpleSocialApp = () => {
     try {
       console.log('Login attempt mobile:', {
         email: loginData.email,
+        password: loginData.password ? '***' : 'empty',
         isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
       });
       
+      // Validazione input
+      if (!loginData.email || !loginData.password) {
+        alert('Inserisci email e password');
+        return;
+      }
+      
       const response = await api.login(loginData.email, loginData.password);
-      console.log('Login success mobile:', response);
+      console.log('Login success mobile:', {
+        user: response.user?.name,
+        token: response.token ? 'present' : 'missing',
+        timestamp: new Date().toISOString()
+      });
       
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('auth_user', JSON.stringify(response.user));
@@ -187,7 +199,12 @@ const SimpleSocialApp = () => {
       setShowLogin(false);
       loadPosts();
     } catch (error) {
-      console.error('Login error mobile:', error);
+      console.error('Login error mobile:', {
+        error: error.message,
+        status: error.status,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       alert('Errore nel login: ' + error.message);
     }
   };
