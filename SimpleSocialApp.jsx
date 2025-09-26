@@ -44,6 +44,13 @@ const SimpleSocialApp = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showResetForm, setShowResetForm] = useState(false);
+  
+  // Stati per eliminazione account
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteCustomReason, setDeleteCustomReason] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Carica utente al mount
   useEffect(() => {
@@ -208,6 +215,47 @@ const SimpleSocialApp = () => {
       hasNumbers,
       hasSpecialChar
     };
+  };
+
+  // Eliminazione account
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    
+    if (!deletePassword) {
+      alert('Inserisci la password per confermare l\'eliminazione');
+      return;
+    }
+    
+    if (!deleteReason) {
+      alert('Seleziona un motivo per l\'eliminazione');
+      return;
+    }
+    
+    const finalReason = deleteReason === 'other' ? deleteCustomReason : deleteReason;
+    
+    if (!confirm(`Sei sicuro di voler eliminare il tuo account? Questa azione non può essere annullata.\n\nMotivo: ${finalReason}`)) {
+      return;
+    }
+    
+    try {
+      const response = await api.deleteAccount(deletePassword, finalReason);
+      alert('Account eliminato con successo');
+      
+      // Logout e redirect
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      setUser(null);
+      setPosts([]);
+      setShowLogin(true);
+      setShowDeleteAccount(false);
+      
+      // Reset form
+      setDeleteReason('');
+      setDeleteCustomReason('');
+      setDeletePassword('');
+    } catch (error) {
+      alert('Errore nell\'eliminazione dell\'account: ' + error.message);
+    }
   };
 
   // Crea post
@@ -759,6 +807,12 @@ const SimpleSocialApp = () => {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm">{user?.name}</span>
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Elimina Account
+            </button>
             <button
               onClick={handleLogout}
               className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
@@ -1382,6 +1436,99 @@ const SimpleSocialApp = () => {
                   className="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
                 >
                   Reset Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Eliminazione Account */}
+      {showDeleteAccount && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-red-400">Elimina Account</h3>
+              <button
+                onClick={() => setShowDeleteAccount(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleDeleteAccount} className="space-y-4">
+              <div className="text-gray-300 text-sm mb-4">
+                <p className="mb-2">⚠️ <strong>Attenzione:</strong> Questa azione è irreversibile!</p>
+                <p>Tutti i tuoi dati, post, commenti e informazioni verranno eliminati permanentemente.</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Motivo dell'eliminazione:
+                </label>
+                <select
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none"
+                  required
+                >
+                  <option value="">Seleziona un motivo</option>
+                  <option value="not_using">Non uso più la piattaforma</option>
+                  <option value="privacy_concerns">Problemi di privacy</option>
+                  <option value="too_much_content">Troppi contenuti non rilevanti</option>
+                  <option value="technical_issues">Problemi tecnici</option>
+                  <option value="found_alternative">Ho trovato un'alternativa migliore</option>
+                  <option value="other">Altro</option>
+                </select>
+              </div>
+              
+              {deleteReason === 'other' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Specifica il motivo:
+                  </label>
+                  <textarea
+                    value={deleteCustomReason}
+                    onChange={(e) => setDeleteCustomReason(e.target.value)}
+                    placeholder="Descrivi il motivo dell'eliminazione..."
+                    className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none h-20 resize-none"
+                    required
+                  />
+                </div>
+              )}
+              
+              <div className="relative">
+                <input
+                  type={showDeletePassword ? "text" : "password"}
+                  placeholder="Conferma password per eliminare"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDeletePassword(!showDeletePassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showDeletePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteAccount(false)}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Elimina Definitivamente
                 </button>
               </div>
             </form>

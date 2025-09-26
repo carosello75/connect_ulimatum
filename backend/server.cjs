@@ -54,6 +54,23 @@ db.run(`
   }
 });
 
+// Crea tabella per log eliminazioni account
+db.run(`
+  CREATE TABLE IF NOT EXISTS account_deletions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    deleted_at TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`, (err) => {
+  if (err) {
+    console.error('Errore nella creazione della tabella account_deletions:', err);
+  } else {
+    console.log('Tabella account_deletions creata/verificata');
+  }
+});
+
 // Configurazione Multer per upload file
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -1018,6 +1035,70 @@ app.post('/api/auth/reset-password', (req, res) => {
       );
     }
   );
+});
+
+// Eliminazione account
+app.post('/api/auth/delete-account', authenticateToken, (req, res) => {
+  const { password, reason } = req.body;
+  const userId = req.user.id;
+  
+  if (!password || !reason) {
+    return res.status(400).json({ error: 'Password e motivo richiesti' });
+  }
+  
+  // Verifica la password
+  db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Errore del server' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utente non trovato' });
+    }
+    
+    // Verifica la password
+    if (!bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ error: 'Password non corretta' });
+    }
+    
+    // Salva il motivo dell'eliminazione (per statistiche)
+    db.run(
+      'INSERT INTO account_deletions (user_id, reason, deleted_at) VALUES (?, ?, ?)',
+      [userId, reason, new Date().toISOString()],
+      function(err) {
+        if (err) {
+          console.error('Errore nel salvare il motivo dell\'eliminazione:', err);
+        }
+      }
+    );
+    
+    // Elimina tutti i dati dell'utente
+    db.serialize(() => {
+      // Elimina commenti dell'utente
+      db.run('DELETE FROM comments WHERE user_id = ?', [userId]);
+      
+      // Elimina like dell'utente
+      db.run('DELETE FROM likes WHERE user_id = ?', [userId]);
+      
+      // Elimina post dell'utente (e i loro commenti e like)
+      db.run('DELETE FROM comments WHERE post_id IN (SELECT id FROM posts WHERE user_id = ?)', [userId]);
+      db.run('DELETE FROM likes WHERE post_id IN (SELECT id FROM posts WHERE user_id = ?)', [userId]);
+      db.run('DELETE FROM posts WHERE user_id = ?', [userId]);
+      
+      // Elimina token di reset password
+      db.run('DELETE FROM password_resets WHERE user_id = ?', [userId]);
+      
+      // Elimina l'utente
+      db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Errore nell\'eliminazione dell\'account' });
+        }
+        
+        console.log(`Account eliminato: ${user.email} - Motivo: ${reason}`);
+        res.json({ message: 'Account eliminato con successo' });
+      });
+    });
+  });
 });
 
 // Servi i file statici del frontend

@@ -23822,6 +23822,7 @@ var api = {
   register: (username, email, password, name) => request("/api/auth/register", { method: "POST", body: { username, email, password, name } }),
   forgotPassword: (email) => request("/api/auth/forgot-password", { method: "POST", body: { email } }),
   resetPassword: (token, newPassword) => request("/api/auth/reset-password", { method: "POST", body: { token, newPassword } }),
+  deleteAccount: (password, reason) => request("/api/auth/delete-account", { method: "POST", body: { password, reason }, auth: true }),
   feed: (page = 1, limit = 10) => request(`/api/posts/feed?page=${page}&limit=${limit}`, { auth: true }),
   like: (postId) => request(`/api/posts/${postId}/like`, { method: "POST", auth: true }),
   comments: (postId) => request(`/api/posts/${postId}/comments`),
@@ -23864,6 +23865,11 @@ var SimpleSocialApp = () => {
   const [newPassword, setNewPassword] = (0, import_react3.useState)("");
   const [confirmNewPassword, setConfirmNewPassword] = (0, import_react3.useState)("");
   const [showResetForm, setShowResetForm] = (0, import_react3.useState)(false);
+  const [showDeleteAccount, setShowDeleteAccount] = (0, import_react3.useState)(false);
+  const [deleteReason, setDeleteReason] = (0, import_react3.useState)("");
+  const [deleteCustomReason, setDeleteCustomReason] = (0, import_react3.useState)("");
+  const [deletePassword, setDeletePassword] = (0, import_react3.useState)("");
+  const [showDeletePassword, setShowDeletePassword] = (0, import_react3.useState)(false);
   (0, import_react3.useEffect)(() => {
     const token = localStorage.getItem("auth_token");
     const userData = localStorage.getItem("auth_user");
@@ -24002,6 +24008,38 @@ var SimpleSocialApp = () => {
       hasNumbers,
       hasSpecialChar
     };
+  };
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (!deletePassword) {
+      alert("Inserisci la password per confermare l'eliminazione");
+      return;
+    }
+    if (!deleteReason) {
+      alert("Seleziona un motivo per l'eliminazione");
+      return;
+    }
+    const finalReason = deleteReason === "other" ? deleteCustomReason : deleteReason;
+    if (!confirm(`Sei sicuro di voler eliminare il tuo account? Questa azione non pu\xF2 essere annullata.
+
+Motivo: ${finalReason}`)) {
+      return;
+    }
+    try {
+      const response = await api.deleteAccount(deletePassword, finalReason);
+      alert("Account eliminato con successo");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      setUser(null);
+      setPosts([]);
+      setShowLogin(true);
+      setShowDeleteAccount(false);
+      setDeleteReason("");
+      setDeleteCustomReason("");
+      setDeletePassword("");
+    } catch (error) {
+      alert("Errore nell'eliminazione dell'account: " + error.message);
+    }
   };
   const handleCreatePost = async () => {
     if (!newPost.trim() && !selectedFile) return;
@@ -24408,6 +24446,13 @@ ${newPost}` : newPost;
   return /* @__PURE__ */ import_react3.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react3.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "max-w-6xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react3.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "text-sm" }, user?.name), /* @__PURE__ */ import_react3.default.createElement(
     "button",
     {
+      onClick: () => setShowDeleteAccount(true),
+      className: "bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+    },
+    "Elimina Account"
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
       onClick: handleLogout,
       className: "bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
     },
@@ -24752,6 +24797,70 @@ ${newPost}` : newPost;
       className: "flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
     },
     "Reset Password"
+  ))))), showDeleteAccount && /* @__PURE__ */ import_react3.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react3.default.createElement("h3", { className: "text-lg font-bold text-red-400" }, "Elimina Account"), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      onClick: () => setShowDeleteAccount(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\xD7"
+  )), /* @__PURE__ */ import_react3.default.createElement("form", { onSubmit: handleDeleteAccount, className: "space-y-4" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "text-gray-300 text-sm mb-4" }, /* @__PURE__ */ import_react3.default.createElement("p", { className: "mb-2" }, "\u26A0\uFE0F ", /* @__PURE__ */ import_react3.default.createElement("strong", null, "Attenzione:"), " Questa azione \xE8 irreversibile!"), /* @__PURE__ */ import_react3.default.createElement("p", null, "Tutti i tuoi dati, post, commenti e informazioni verranno eliminati permanentemente.")), /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Motivo dell'eliminazione:"), /* @__PURE__ */ import_react3.default.createElement(
+    "select",
+    {
+      value: deleteReason,
+      onChange: (e) => setDeleteReason(e.target.value),
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none",
+      required: true
+    },
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "" }, "Seleziona un motivo"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "not_using" }, "Non uso pi\xF9 la piattaforma"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "privacy_concerns" }, "Problemi di privacy"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "too_much_content" }, "Troppi contenuti non rilevanti"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "technical_issues" }, "Problemi tecnici"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "found_alternative" }, "Ho trovato un'alternativa migliore"),
+    /* @__PURE__ */ import_react3.default.createElement("option", { value: "other" }, "Altro")
+  )), deleteReason === "other" && /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-2" }, "Specifica il motivo:"), /* @__PURE__ */ import_react3.default.createElement(
+    "textarea",
+    {
+      value: deleteCustomReason,
+      onChange: (e) => setDeleteCustomReason(e.target.value),
+      placeholder: "Descrivi il motivo dell'eliminazione...",
+      className: "w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none h-20 resize-none",
+      required: true
+    }
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "relative" }, /* @__PURE__ */ import_react3.default.createElement(
+    "input",
+    {
+      type: showDeletePassword ? "text" : "password",
+      placeholder: "Conferma password per eliminare",
+      value: deletePassword,
+      onChange: (e) => setDeletePassword(e.target.value),
+      className: "w-full p-3 pr-12 bg-gray-800 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none",
+      required: true
+    }
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowDeletePassword(!showDeletePassword),
+      className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+    },
+    showDeletePassword ? /* @__PURE__ */ import_react3.default.createElement(EyeOff, { className: "w-5 h-5" }) : /* @__PURE__ */ import_react3.default.createElement(Eye, { className: "w-5 h-5" })
+  )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "flex space-x-3" }, /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setShowDeleteAccount(false),
+      className: "flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+    },
+    "Annulla"
+  ), /* @__PURE__ */ import_react3.default.createElement(
+    "button",
+    {
+      type: "submit",
+      className: "flex-1 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition-colors"
+    },
+    "Elimina Definitivamente"
   ))))));
 };
 var SimpleSocialApp_default = SimpleSocialApp;
