@@ -36,6 +36,9 @@ if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads/videos');
 }
 
+// Inizializza database
+const db = new sqlite3.Database('./socialnetwork.db');
+
 // Crea tabella per password reset se non esiste
 db.run(`
   CREATE TABLE IF NOT EXISTS password_resets (
@@ -143,9 +146,6 @@ const upload = multer({
     }
   }
 });
-
-// Database Setup
-const db = new sqlite3.Database('./socialnetwork.db');
 
 // Inizializzazione tabelle database
 db.serialize(() => {
