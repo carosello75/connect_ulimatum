@@ -1202,27 +1202,28 @@ app.post('/api/profile/update', authenticateToken, upload.single('image'), (req,
     let updateFields = [];
     let values = [];
     
-    if (name) {
+    // Controlla se ci sono dati da aggiornare
+    if (name && name.trim() !== '') {
       updateFields.push('name = ?');
       values.push(name);
     }
-    if (username) {
+    if (username && username.trim() !== '') {
       updateFields.push('username = ?');
       values.push(username);
     }
-    if (email) {
+    if (email && email.trim() !== '') {
       updateFields.push('email = ?');
       values.push(email);
     }
-    if (bio !== undefined) {
+    if (bio !== undefined && bio !== null) {
       updateFields.push('bio = ?');
       values.push(bio);
     }
-    if (website !== undefined) {
+    if (website !== undefined && website !== null) {
       updateFields.push('website = ?');
       values.push(website);
     }
-    if (location !== undefined) {
+    if (location !== undefined && location !== null) {
       updateFields.push('location = ?');
       values.push(location);
     }
