@@ -78,21 +78,6 @@ const SimpleSocialApp = () => {
 
   // Carica utente al mount
   useEffect(() => {
-    // Controlla se c'è un token di reset nell'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const resetToken = urlParams.get('token');
-    
-    // Solo se c'è un token valido (almeno 20 caratteri)
-    if (resetToken && resetToken.length >= 20) {
-      verifyResetToken(resetToken);
-      return;
-    }
-    
-    // Pulisci l'URL se ci sono parametri non validi
-    if (window.location.search && !resetToken) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
     const token = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('auth_user');
     if (token && userData) {
@@ -248,6 +233,16 @@ const SimpleSocialApp = () => {
       alert(`Email di reset inviata! Link di reset: ${response.resetLink}`);
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
+      
+      // Se c'è un link di reset, apri il modal di reset
+      if (response.resetLink) {
+        const url = new URL(response.resetLink);
+        const token = url.searchParams.get('token');
+        if (token) {
+          setResetToken(token);
+          setShowResetForm(true);
+        }
+      }
     } catch (error) {
       alert('Errore nell\'invio dell\'email: ' + error.message);
     }
