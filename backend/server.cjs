@@ -1165,6 +1165,7 @@ app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image
   
   console.log('Dati ricevuti:', req.body);
   console.log('File ricevuto:', req.files);
+  console.log('Headers:', req.headers);
   
   // Verifica se l'username è già in uso da altri utenti
   if (username) {
