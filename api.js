@@ -1,4 +1,8 @@
-const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || 'http://localhost:3001';
+// Configurazione API per sviluppo e produzione
+const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || 
+  (window.location.hostname === 'web-production-54984.up.railway.app' 
+    ? 'https://web-production-54984.up.railway.app' 
+    : 'http://localhost:3001');
 
 function getToken() {
   return localStorage.getItem('auth_token') || '';
