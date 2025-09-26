@@ -91,6 +91,35 @@ function SimpleConnect() {
     }
   };
 
+  // Carica commenti per un post
+  const loadComments = async (postId) => {
+    try {
+      const apiBase = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001' 
+        : 'https://web-production-54984.up.railway.app';
+      
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setComments(prev => ({
+          ...prev,
+          [postId]: data.comments || []
+        }));
+        console.log('✅ Commenti caricati per post', postId, ':', data.comments?.length || 0);
+      } else {
+        console.error('❌ Errore nel caricamento dei commenti:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Errore nel caricamento dei commenti:', error);
+    }
+  };
+
   // Carica utenti online
   const loadOnlineUsers = async () => {
     try {
@@ -183,7 +212,11 @@ function SimpleConnect() {
       
       if (response.ok) {
         setNewComment('');
-        loadPosts();
+        loadPosts(); // Ricarica i post per aggiornare il contatore
+        loadComments(postId); // Ricarica i commenti per questo post
+        console.log('✅ Commento aggiunto con successo');
+      } else {
+        console.error('❌ Errore nell\'aggiunta del commento:', response.status);
       }
     } catch (error) {
       console.error('Errore nell\'aggiunta del commento:', error);
@@ -634,6 +667,9 @@ function SimpleConnect() {
                           ...prev,
                           [post.id]: !prev[post.id]
                         }));
+                        if (!showComments[post.id]) {
+                          loadComments(post.id);
+                        }
                       }}
                       className="flex items-center space-x-1 text-gray-400 hover:text-blue-500"
                     >
@@ -650,6 +686,24 @@ function SimpleConnect() {
                   {/* Commenti */}
                   {showComments[post.id] && (
                     <div className="border-t border-gray-700 pt-3">
+                      {/* Lista commenti esistenti */}
+                      {comments[post.id] && comments[post.id].length > 0 && (
+                        <div className="mb-3 space-y-2">
+                          {comments[post.id].map((comment) => (
+                            <div key={comment.id} className="bg-gray-800 p-2 rounded-lg">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-bold text-sm">{comment.username}</span>
+                                <span className="text-xs text-gray-400">
+                                  {new Date(comment.created_at).toLocaleString('it-IT')}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-100">{comment.content}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Form nuovo commento */}
                       <div className="flex space-x-2">
                         <input
                           type="text"

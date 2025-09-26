@@ -1,10 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import SimpleConnect from './SimpleConnect.jsx';
+import DebugConnect from './DebugConnect.jsx';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
-root.render(<SimpleConnect />);
+root.render(<DebugConnect />);
 
 
 

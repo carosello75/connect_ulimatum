@@ -23584,35 +23584,53 @@ var require_client = __commonJS({
 var import_react2 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
-// SimpleConnect.jsx
+// DebugConnect.jsx
 var import_react = __toESM(require_react(), 1);
-function SimpleConnect() {
+function DebugConnect() {
   const [user, setUser] = (0, import_react.useState)(null);
   const [posts, setPosts] = (0, import_react.useState)([]);
   const [newPost, setNewPost] = (0, import_react.useState)("");
   const [loading, setLoading] = (0, import_react.useState)(false);
   const [showLogin, setShowLogin] = (0, import_react.useState)(false);
   const [loginData, setLoginData] = (0, import_react.useState)({ email: "", password: "" });
-  const [registerData, setRegisterData] = (0, import_react.useState)({
-    name: "",
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
-  const [isRegister, setIsRegister] = (0, import_react.useState)(false);
+  const [comments, setComments] = (0, import_react.useState)({});
+  const [newComment, setNewComment] = (0, import_react.useState)("");
+  const [showComments, setShowComments] = (0, import_react.useState)({});
   const [selectedFile, setSelectedFile] = (0, import_react.useState)(null);
   const [filePreview, setFilePreview] = (0, import_react.useState)(null);
   const [fileType, setFileType] = (0, import_react.useState)(null);
-  const [showComments, setShowComments] = (0, import_react.useState)({});
-  const [comments, setComments] = (0, import_react.useState)({});
-  const [newComment, setNewComment] = (0, import_react.useState)("");
+  const fileInputRef = (0, import_react.useRef)(null);
+  const [showProfile, setShowProfile] = (0, import_react.useState)(false);
+  const [profileSettings, setProfileSettings] = (0, import_react.useState)({
+    name: "",
+    username: "",
+    email: "",
+    bio: "",
+    website: "",
+    location: ""
+  });
+  const [profileImage, setProfileImage] = (0, import_react.useState)(null);
+  const [profileImagePreview, setProfileImagePreview] = (0, import_react.useState)(null);
+  const profileImageRef = (0, import_react.useRef)(null);
   const [notifications, setNotifications] = (0, import_react.useState)([]);
   const [onlineUsers, setOnlineUsers] = (0, import_react.useState)([]);
-  const fileInputRef = (0, import_react.useRef)(null);
+  const [showNotifications, setShowNotifications] = (0, import_react.useState)(false);
+  const [showOnlineUsers, setShowOnlineUsers] = (0, import_react.useState)(false);
+  const [showReviews, setShowReviews] = (0, import_react.useState)(false);
+  const [reviews, setReviews] = (0, import_react.useState)([]);
+  const [newReview, setNewReview] = (0, import_react.useState)({
+    rating: 5,
+    title: "",
+    content: ""
+  });
+  const [showShareModal, setShowShareModal] = (0, import_react.useState)(false);
+  const [selectedPost, setSelectedPost] = (0, import_react.useState)(null);
   (0, import_react.useEffect)(() => {
+    console.log("\u{1F50D} DebugConnect: useEffect iniziale");
     const savedUser = localStorage.getItem("auth_user");
     const savedToken = localStorage.getItem("auth_token");
+    console.log("\u{1F50D} Utente salvato:", savedUser);
+    console.log("\u{1F50D} Token salvato:", savedToken ? "Presente" : "Assente");
     if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
       loadPosts();
@@ -23624,61 +23642,164 @@ function SimpleConnect() {
   }, []);
   const loadPosts = async () => {
     try {
+      console.log("\u{1F50D} Caricamento post...");
       setLoading(true);
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const apiBase = "http://localhost:3001";
       const token = localStorage.getItem("auth_token");
+      console.log("\u{1F50D} Token per API:", token ? "Presente" : "Assente");
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
+      console.log("\u{1F50D} Risposta API:", response.status);
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts || []);
+        console.log("\u2705 Post caricati:", data.posts?.length || 0);
+      } else {
+        console.error("\u274C Errore nel caricamento dei post:", response.status);
       }
     } catch (error) {
-      console.error("Errore nel caricamento dei post:", error);
+      console.error("\u274C Errore nel caricamento dei post:", error);
     } finally {
       setLoading(false);
     }
   };
-  const loadNotifications = async () => {
+  const loadComments = async (postId) => {
     try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      console.log("\u{1F50D} Caricamento commenti per post:", postId);
+      const apiBase = "http://localhost:3001";
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${apiBase}/api/notifications`, {
+      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
+      console.log("\u{1F50D} Risposta commenti:", response.status);
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.notifications || []);
+        setComments((prev) => ({
+          ...prev,
+          [postId]: data.comments || []
+        }));
+        console.log("\u2705 Commenti caricati per post", postId, ":", data.comments?.length || 0);
+      } else {
+        console.error("\u274C Errore nel caricamento dei commenti:", response.status);
       }
     } catch (error) {
-      console.error("Errore nel caricamento delle notifiche:", error);
+      console.error("\u274C Errore nel caricamento dei commenti:", error);
     }
   };
-  const loadOnlineUsers = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    console.log("\u{1F50D} Tentativo di login:", loginData.email);
+    setLoading(true);
     try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const apiBase = "http://localhost:3001";
+      const response = await fetch(`${apiBase}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData)
+      });
+      console.log("\u{1F50D} Risposta login:", response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("\u2705 Login riuscito:", data.user.name);
+        localStorage.setItem("auth_token", data.token);
+        localStorage.setItem("auth_user", JSON.stringify(data.user));
+        setUser(data.user);
+        setShowLogin(false);
+        loadPosts();
+        alert("Login effettuato con successo!");
+      } else {
+        const errorData = await response.json();
+        console.error("\u274C Errore login:", errorData);
+        alert("Credenziali non valide: " + errorData.error);
+      }
+    } catch (error) {
+      console.error("\u274C Errore login:", error);
+      alert("Errore nel login: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!newPost.trim() && !selectedFile) return;
+    console.log("\u{1F50D} Creando post:", newPost, "File:", selectedFile?.name);
+    setLoading(true);
+    try {
+      const apiBase = "http://localhost:3001";
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${apiBase}/api/online-users`, {
+      let response;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("content", newPost);
+        formData.append("media", selectedFile);
+        response = await fetch(`${apiBase}/api/posts`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+      } else {
+        response = await fetch(`${apiBase}/api/posts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ content: newPost })
+        });
+      }
+      console.log("\u{1F50D} Risposta creazione post:", response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("\u2705 Post creato:", data);
+        setNewPost("");
+        removeFile();
+        loadPosts();
+        alert("Post pubblicato con successo!");
+      } else {
+        const errorData = await response.json();
+        console.error("\u274C Errore post:", errorData);
+        alert("Errore: " + errorData.error);
+      }
+    } catch (error) {
+      console.error("\u274C Errore post:", error);
+      alert("Errore: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleLike = async (postId) => {
+    try {
+      console.log("\u{1F50D} Aggiungendo like al post:", postId);
+      const apiBase = "http://localhost:3001";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/posts/${postId}/like`, {
+        method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
+      console.log("\u{1F50D} Risposta like:", response.status);
       if (response.ok) {
-        const data = await response.json();
-        setOnlineUsers(data.users || []);
+        loadPosts();
+        console.log("\u2705 Like aggiunto con successo");
+      } else {
+        console.error("\u274C Errore nel like:", response.status);
       }
     } catch (error) {
-      console.error("Errore nel caricamento degli utenti online:", error);
+      console.error("\u274C Errore nel like:", error);
     }
   };
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log("\u{1F50D} File selezionato:", file.name, file.type, file.size);
       setSelectedFile(file);
       setFileType(file.type.startsWith("image/") ? "image" : "video");
       const reader = new FileReader();
@@ -23696,27 +23817,231 @@ function SimpleConnect() {
       fileInputRef.current.value = "";
     }
   };
-  const handleLike = async (postId) => {
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log("\u{1F50D} Immagine profilo selezionata:", file.name, file.type, file.size);
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onload = (e2) => {
+        setProfileImagePreview(e2.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  const removeProfileImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (profileImageRef.current) {
+      profileImageRef.current.value = "";
+    }
+  };
+  const loadNotifications = async () => {
     try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      console.log("\u{1F50D} Caricamento notifiche...");
+      const apiBase = "http://localhost:3001";
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${apiBase}/api/posts/${postId}/like`, {
-        method: "POST",
+      const response = await fetch(`${apiBase}/api/notifications`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
+      console.log("\u{1F50D} Risposta notifiche:", response.status);
       if (response.ok) {
-        loadPosts();
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+        console.log("\u2705 Notifiche caricate:", data.notifications?.length || 0);
+      } else {
+        console.error("\u274C Errore nel caricamento delle notifiche:", response.status);
       }
     } catch (error) {
-      console.error("Errore nel like:", error);
+      console.error("\u274C Errore nel caricamento delle notifiche:", error);
     }
+  };
+  const loadOnlineUsers = async () => {
+    try {
+      console.log("\u{1F50D} Caricamento utenti online...");
+      const apiBase = "http://localhost:3001";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/online-users`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      console.log("\u{1F50D} Risposta utenti online:", response.status);
+      if (response.ok) {
+        const data = await response.json();
+        setOnlineUsers(data.users || []);
+        console.log("\u2705 Utenti online caricati:", data.users?.length || 0);
+      } else {
+        console.error("\u274C Errore nel caricamento degli utenti online:", response.status);
+      }
+    } catch (error) {
+      console.error("\u274C Errore nel caricamento degli utenti online:", error);
+    }
+  };
+  const handleSaveProfile = async () => {
+    try {
+      console.log("\u{1F50D} Salvando profilo:", profileSettings);
+      const apiBase = "http://localhost:3001";
+      const token = localStorage.getItem("auth_token");
+      const formData = new FormData();
+      formData.append("name", profileSettings.name);
+      formData.append("username", profileSettings.username);
+      formData.append("email", profileSettings.email);
+      formData.append("bio", profileSettings.bio);
+      formData.append("website", profileSettings.website);
+      formData.append("location", profileSettings.location);
+      if (profileImage) {
+        formData.append("image", profileImage);
+      }
+      const response = await fetch(`${apiBase}/api/profile/update`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      });
+      console.log("\u{1F50D} Risposta aggiornamento profilo:", response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("\u2705 Profilo aggiornato:", data);
+        const updatedUser = { ...user, ...data.user };
+        localStorage.setItem("auth_user", JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        setShowProfile(false);
+        alert("Profilo aggiornato con successo!");
+      } else {
+        const errorData = await response.json();
+        console.error("\u274C Errore aggiornamento profilo:", errorData);
+        alert("Errore: " + errorData.error);
+      }
+    } catch (error) {
+      console.error("\u274C Errore aggiornamento profilo:", error);
+      alert("Errore: " + error.message);
+    }
+  };
+  const handleDeletePost = async (postId) => {
+    if (!confirm("Sei sicuro di voler eliminare questo post?")) return;
+    try {
+      console.log("\u{1F50D} Eliminando post:", postId);
+      const apiBase = "http://localhost:3001";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/posts/${postId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      console.log("\u{1F50D} Risposta eliminazione post:", response.status);
+      if (response.ok) {
+        console.log("\u2705 Post eliminato con successo");
+        loadPosts();
+        alert("Post eliminato con successo!");
+      } else {
+        const errorData = await response.json();
+        console.error("\u274C Errore nell'eliminazione del post:", errorData);
+        alert("Errore: " + errorData.error);
+      }
+    } catch (error) {
+      console.error("\u274C Errore nell'eliminazione del post:", error);
+      alert("Errore: " + error.message);
+    }
+  };
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm("Sei sicuro di voler eliminare questo commento?")) return;
+    try {
+      console.log("\u{1F50D} Eliminando commento:", commentId);
+      const apiBase = "http://localhost:3001";
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      console.log("\u{1F50D} Risposta eliminazione commento:", response.status);
+      if (response.ok) {
+        console.log("\u2705 Commento eliminato con successo");
+        const postId = Object.keys(comments).find(
+          (id) => comments[id].some((comment) => comment.id === commentId)
+        );
+        if (postId) {
+          loadComments(postId);
+        }
+        alert("Commento eliminato con successo!");
+      } else {
+        const errorData = await response.json();
+        console.error("\u274C Errore nell'eliminazione del commento:", errorData);
+        alert("Errore: " + errorData.error);
+      }
+    } catch (error) {
+      console.error("\u274C Errore nell'eliminazione del commento:", error);
+      alert("Errore: " + error.message);
+    }
+  };
+  const handleSharePost = async (post) => {
+    if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      try {
+        const shareData = {
+          title: `Post di ${post.name} su Connect`,
+          text: post.content || "Guarda questo post su Connect!",
+          url: window.location.origin
+        };
+        await navigator.share(shareData);
+        console.log("\u2705 Condiviso con Web Share API");
+        return;
+      } catch (error) {
+        console.log("\u26A0\uFE0F Web Share API annullato dall'utente");
+      }
+    }
+    setSelectedPost(post);
+    setShowShareModal(true);
+  };
+  const shareToSocial = (platform, post) => {
+    const shareUrl = window.location.origin;
+    const shareText = encodeURIComponent(post.content || "Guarda questo post su Connect!");
+    const shareTitle = encodeURIComponent(`Post di ${post.name} su Connect`);
+    let socialUrl = "";
+    switch (platform) {
+      case "facebook":
+        socialUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${shareText}`;
+        break;
+      case "twitter":
+        socialUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "whatsapp":
+        socialUrl = `https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}`;
+        break;
+      case "telegram":
+        socialUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${shareText}`;
+        break;
+      case "linkedin":
+        socialUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "instagram":
+        navigator.clipboard.writeText(`${shareText}
+
+${shareUrl}`);
+        alert("\u2705 Link copiato! Incollalo nella tua storia Instagram!");
+        return;
+      case "tiktok":
+        navigator.clipboard.writeText(`${shareText}
+
+${shareUrl}`);
+        alert("\u2705 Link copiato! Incollalo nel tuo video TikTok!");
+        return;
+      default:
+        return;
+    }
+    window.open(socialUrl, "_blank", "width=600,height=400");
+    console.log(`\u2705 Condiviso su ${platform}`);
   };
   const handleAddComment = async (postId) => {
     if (!newComment.trim()) return;
+    console.log("\u{1F50D} Aggiungendo commento:", newComment, "al post:", postId);
     try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
+      const apiBase = "http://localhost:3001";
       const token = localStorage.getItem("auth_token");
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: "POST",
@@ -23726,126 +24051,20 @@ function SimpleConnect() {
         },
         body: JSON.stringify({ content: newComment })
       });
+      console.log("\u{1F50D} Risposta aggiunta commento:", response.status);
       if (response.ok) {
         setNewComment("");
         loadPosts();
+        loadComments(postId);
+        console.log("\u2705 Commento aggiunto con successo");
+        alert("Commento aggiunto!");
+      } else {
+        console.error("\u274C Errore nell'aggiunta del commento:", response.status);
+        alert("Errore nell'aggiunta del commento");
       }
     } catch (error) {
-      console.error("Errore nell'aggiunta del commento:", error);
-    }
-  };
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
-      const response = await fetch(`${apiBase}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData)
-      });
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("auth_token", data.token);
-        localStorage.setItem("auth_user", JSON.stringify(data.user));
-        setUser(data.user);
-        setShowLogin(false);
-        loadPosts();
-        loadNotifications();
-        loadOnlineUsers();
-        alert("Login effettuato con successo!");
-      } else {
-        alert("Credenziali non valide");
-      }
-    } catch (error) {
-      alert("Errore nel login: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    if (registerData.password !== registerData.confirmPassword) {
-      alert("Le password non coincidono");
-      return;
-    }
-    setLoading(true);
-    try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
-      const response = await fetch(`${apiBase}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: registerData.name,
-          username: registerData.username,
-          email: registerData.email,
-          password: registerData.password
-        })
-      });
-      if (response.ok) {
-        alert("Registrazione completata! Ora puoi fare login.");
-        setIsRegister(false);
-        setRegisterData({ name: "", username: "", email: "", password: "", confirmPassword: "" });
-      } else {
-        const error = await response.json();
-        alert("Errore: " + (error.error || "Registrazione fallita"));
-      }
-    } catch (error) {
-      alert("Errore nella registrazione: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleCreatePost = async (e) => {
-    e.preventDefault();
-    if (!newPost.trim() && !selectedFile) return;
-    setLoading(true);
-    try {
-      const apiBase = window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app";
-      const token = localStorage.getItem("auth_token");
-      console.log("\u{1F680} Creando post:", { newPost, selectedFile, fileType });
-      let response;
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append("content", newPost);
-        formData.append("media", selectedFile);
-        console.log("\u{1F4E4} Invio post con media:", formData);
-        response = await fetch(`${apiBase}/api/posts`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          },
-          body: formData
-        });
-      } else {
-        console.log("\u{1F4E4} Invio post solo testo:", { content: newPost });
-        response = await fetch(`${apiBase}/api/posts`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ content: newPost })
-        });
-      }
-      console.log("\u{1F4E1} Response status:", response.status);
-      if (response.ok) {
-        const data = await response.json();
-        console.log("\u2705 Post creato:", data);
-        setNewPost("");
-        removeFile();
-        loadPosts();
-        alert("Post pubblicato con successo!");
-      } else {
-        const errorData = await response.json();
-        console.error("\u274C Errore post:", errorData);
-        alert("Errore nella pubblicazione del post: " + (errorData.error || "Errore sconosciuto"));
-      }
-    } catch (error) {
-      console.error("\u274C Errore completo:", error);
+      console.error("\u274C Errore nell'aggiunta del commento:", error);
       alert("Errore: " + error.message);
-    } finally {
-      setLoading(false);
     }
   };
   const handleLogout = () => {
@@ -23856,7 +24075,7 @@ function SimpleConnect() {
     setShowLogin(true);
   };
   if (!user) {
-    return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-full max-w-md p-6" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-2xl" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-3xl font-bold text-blue-400" }, "Connect"), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-gray-400 mt-2" }, "Il tuo social network")), !isRegister ? /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleLogin, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement("h2", { className: "text-xl font-bold text-center mb-6" }, "Accedi"), /* @__PURE__ */ import_react.default.createElement(
+    return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-full max-w-md p-6" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-2xl" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-3xl font-bold text-blue-400" }, "Connect - Debug"), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-gray-400 mt-2" }, "Versione Debug")), /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleLogin, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement("h2", { className: "text-xl font-bold text-center mb-6" }, "Accedi"), /* @__PURE__ */ import_react.default.createElement(
       "input",
       {
         type: "email",
@@ -23884,90 +24103,126 @@ function SimpleConnect() {
         className: "w-full bg-blue-500 text-white p-3 rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:bg-gray-700"
       },
       loading ? "Caricamento..." : "Accedi"
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsRegister(true),
-        className: "w-full text-blue-400 hover:text-blue-300"
-      },
-      "Non hai un account? Registrati"
-    )) : /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleRegister, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement("h2", { className: "text-xl font-bold text-center mb-6" }, "Registrati"), /* @__PURE__ */ import_react.default.createElement(
-      "input",
-      {
-        type: "text",
-        placeholder: "Nome completo",
-        value: registerData.name,
-        onChange: (e) => setRegisterData({ ...registerData, name: e.target.value }),
-        className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500",
-        required: true
-      }
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "input",
-      {
-        type: "text",
-        placeholder: "Username",
-        value: registerData.username,
-        onChange: (e) => setRegisterData({ ...registerData, username: e.target.value }),
-        className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500",
-        required: true
-      }
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "input",
-      {
-        type: "email",
-        placeholder: "Email",
-        value: registerData.email,
-        onChange: (e) => setRegisterData({ ...registerData, email: e.target.value }),
-        className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500",
-        required: true
-      }
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "input",
-      {
-        type: "password",
-        placeholder: "Password",
-        value: registerData.password,
-        onChange: (e) => setRegisterData({ ...registerData, password: e.target.value }),
-        className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500",
-        required: true
-      }
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "input",
-      {
-        type: "password",
-        placeholder: "Conferma Password",
-        value: registerData.confirmPassword,
-        onChange: (e) => setRegisterData({ ...registerData, confirmPassword: e.target.value }),
-        className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500",
-        required: true
-      }
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "button",
-      {
-        type: "submit",
-        disabled: loading,
-        className: "w-full bg-green-500 text-white p-3 rounded-lg font-bold hover:bg-green-600 transition-colors disabled:bg-gray-700"
-      },
-      loading ? "Caricamento..." : "Registrati"
-    ), /* @__PURE__ */ import_react.default.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsRegister(false),
-        className: "w-full text-blue-400 hover:text-blue-300"
-      },
-      "Hai gi\xE0 un account? Accedi"
-    ))));
+    )), /* @__PURE__ */ import_react.default.createElement("div", { className: "mt-4 text-center text-sm text-gray-400" }, /* @__PURE__ */ import_react.default.createElement("p", null, "Credenziali di test:"), /* @__PURE__ */ import_react.default.createElement("p", null, "Email: test2@example.com"), /* @__PURE__ */ import_react.default.createElement("p", null, "Password: password123"))));
   }
-  return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-6xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-sm" }, "Ciao, ", user.name, "!"), /* @__PURE__ */ import_react.default.createElement(
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white" }, /* @__PURE__ */ import_react.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-4xl mx-auto flex items-center justify-between" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect - Debug")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-sm" }, "Ciao, ", user.name, "!"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowNotifications(!showNotifications),
+      className: "bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm relative"
+    },
+    "\u{1F514} Notifiche ",
+    notifications.length > 0 && `(${notifications.length})`
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowOnlineUsers(!showOnlineUsers),
+      className: "bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors text-sm"
+    },
+    "\u{1F465} Online ",
+    onlineUsers.length > 0 && `(${onlineUsers.length})`
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowReviews(!showReviews),
+      className: "bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+    },
+    "\u2B50 Recensioni"
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => {
+        setProfileSettings({
+          name: user.name || "",
+          username: user.username || "",
+          email: user.email || "",
+          bio: user.bio || "",
+          website: user.website || "",
+          location: user.location || ""
+        });
+        setShowProfile(true);
+      },
+      className: "bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+    },
+    "\u2699\uFE0F Profilo"
+  ), /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
       onClick: handleLogout,
       className: "bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
     },
     "Logout"
-  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-6xl mx-auto flex" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 p-4 border-r border-gray-800" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold mb-4 text-blue-400" }, "\u{1F514} Notifiche"), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, notifications.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-sm" }, "Nessuna notifica") : notifications.map((notification) => /* @__PURE__ */ import_react.default.createElement("div", { key: notification.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-2 h-2 rounded-full ${notification.type === "like" ? "bg-red-500" : notification.type === "comment" ? "bg-blue-500" : notification.type === "follow" ? "bg-green-500" : "bg-purple-500"}` }), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300" }, notification.message)), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-500 mt-1" }, new Date(notification.created_at).toLocaleString("it-IT")))))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-1 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-4 rounded-lg mb-6" }, /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleCreatePost, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement(
+  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex" }, showNotifications && /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 bg-gray-900 border-r border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold text-white" }, "\u{1F514} Notifiche"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowNotifications(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2" }, notifications.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-center py-4" }, "Nessuna notifica") : notifications.map((notification) => /* @__PURE__ */ import_react.default.createElement("div", { key: notification.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-100" }, notification.message), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-400 mt-1" }, new Date(notification.created_at).toLocaleString("it-IT")))))), showOnlineUsers && /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 bg-gray-900 border-r border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold text-white" }, "\u{1F465} Utenti Online"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowOnlineUsers(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2" }, onlineUsers.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-center py-4" }, "Nessun utente online") : onlineUsers.map((user2) => /* @__PURE__ */ import_react.default.createElement("div", { key: user2.id, className: "flex items-center space-x-3 bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-green-500 rounded-full flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, user2.name ? user2.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm font-bold text-white" }, user2.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-400" }, "@", user2.username)), /* @__PURE__ */ import_react.default.createElement("div", { className: "ml-auto" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-2 h-2 bg-green-500 rounded-full" })))))), showReviews && /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 bg-gray-900 border-r border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold text-white" }, "\u2B50 Recensioni"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowReviews(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-800 p-4 rounded-lg mb-4" }, /* @__PURE__ */ import_react.default.createElement("h4", { className: "text-white font-bold mb-3" }, "Scrivi una recensione"), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm text-gray-300 mb-1" }, "Valutazione"), /* @__PURE__ */ import_react.default.createElement(
+    "select",
+    {
+      value: newReview.rating,
+      onChange: (e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) }),
+      className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+    },
+    /* @__PURE__ */ import_react.default.createElement("option", { value: 5 }, "\u2B50\u2B50\u2B50\u2B50\u2B50 (5 stelle)"),
+    /* @__PURE__ */ import_react.default.createElement("option", { value: 4 }, "\u2B50\u2B50\u2B50\u2B50 (4 stelle)"),
+    /* @__PURE__ */ import_react.default.createElement("option", { value: 3 }, "\u2B50\u2B50\u2B50 (3 stelle)"),
+    /* @__PURE__ */ import_react.default.createElement("option", { value: 2 }, "\u2B50\u2B50 (2 stelle)"),
+    /* @__PURE__ */ import_react.default.createElement("option", { value: 1 }, "\u2B50 (1 stella)")
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm text-gray-300 mb-1" }, "Titolo"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: newReview.title,
+      onChange: (e) => setNewReview({ ...newReview, title: e.target.value }),
+      placeholder: "Titolo della recensione",
+      className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm text-gray-300 mb-1" }, "Recensione"), /* @__PURE__ */ import_react.default.createElement(
+    "textarea",
+    {
+      value: newReview.content,
+      onChange: (e) => setNewReview({ ...newReview, content: e.target.value }),
+      placeholder: "Scrivi la tua recensione...",
+      rows: "3",
+      className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white resize-none"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => {
+        const review = {
+          id: Date.now(),
+          user: user.name,
+          rating: newReview.rating,
+          title: newReview.title,
+          content: newReview.content,
+          created_at: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        setReviews([review, ...reviews]);
+        setNewReview({ rating: 5, title: "", content: "" });
+        alert("Recensione pubblicata!");
+      },
+      className: "w-full bg-yellow-500 text-white py-2 rounded-lg font-bold hover:bg-yellow-600 transition-colors"
+    },
+    "\u{1F4DD} Pubblica Recensione"
+  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react.default.createElement("h4", { className: "text-white font-bold" }, "Recensioni recenti"), reviews.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-center py-4" }, "Nessuna recensione ancora") : reviews.map((review) => /* @__PURE__ */ import_react.default.createElement("div", { key: review.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm font-bold text-white" }, review.user), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-yellow-400" }, "\u2B50".repeat(review.rating))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm font-bold text-white mb-1" }, review.title), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300" }, review.content), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-400 mt-2" }, new Date(review.created_at).toLocaleString("it-IT")))))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-1 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-4 rounded-lg mb-6" }, /* @__PURE__ */ import_react.default.createElement("form", { onSubmit: handleCreatePost, className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement(
     "textarea",
     {
       value: newPost,
@@ -23976,32 +24231,46 @@ function SimpleConnect() {
       className: "w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 resize-none",
       rows: "3"
     }
-  ), filePreview && /* @__PURE__ */ import_react.default.createElement("div", { className: "relative" }, fileType === "image" ? /* @__PURE__ */ import_react.default.createElement("img", { src: filePreview, alt: "Preview", className: "max-w-full max-h-64 rounded-lg object-cover" }) : /* @__PURE__ */ import_react.default.createElement("video", { src: filePreview, controls: true, className: "max-w-full max-h-64 rounded-lg" }), /* @__PURE__ */ import_react.default.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: removeFile,
-      className: "absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-    },
-    "\u2715"
-  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-2" }, /* @__PURE__ */ import_react.default.createElement(
+  ), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ import_react.default.createElement(
     "input",
     {
       ref: fileInputRef,
       type: "file",
       accept: "image/*,video/*",
       onChange: handleFileSelect,
-      className: "hidden"
+      className: "hidden",
+      id: "file-upload"
     }
   ), /* @__PURE__ */ import_react.default.createElement(
+    "label",
+    {
+      htmlFor: "file-upload",
+      className: "inline-flex items-center px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+    },
+    "\u{1F4CE} Aggiungi foto/video"
+  ), selectedFile && /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-sm text-gray-400" }, fileType === "image" ? "\u{1F5BC}\uFE0F" : "\u{1F3A5}", " ", selectedFile.name), /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
       type: "button",
-      onClick: () => fileInputRef.current?.click(),
-      className: "bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+      onClick: removeFile,
+      className: "text-red-500 hover:text-red-400 text-sm"
     },
-    "\u{1F4F7} Foto/Video"
-  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-end" }, /* @__PURE__ */ import_react.default.createElement(
+    "\u274C Rimuovi"
+  )), filePreview && /* @__PURE__ */ import_react.default.createElement("div", { className: "mt-2" }, fileType === "image" ? /* @__PURE__ */ import_react.default.createElement(
+    "img",
+    {
+      src: filePreview,
+      alt: "Preview",
+      className: "max-w-xs max-h-48 rounded-lg"
+    }
+  ) : /* @__PURE__ */ import_react.default.createElement(
+    "video",
+    {
+      src: filePreview,
+      controls: true,
+      className: "max-w-xs max-h-48 rounded-lg"
+    }
+  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-end" }, /* @__PURE__ */ import_react.default.createElement(
     "button",
     {
       type: "submit",
@@ -24009,17 +24278,25 @@ function SimpleConnect() {
       className: "bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:bg-gray-700"
     },
     loading ? "Pubblicando..." : "Pubblica"
-  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-4" }, loading && posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Caricamento post...")) : posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Nessun post ancora. Sii il primo a pubblicare!")) : posts.map((post) => /* @__PURE__ */ import_react.default.createElement("div", { key: post.id, className: "bg-gray-900 p-4 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold" }, post.name ? post.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { className: "font-bold" }, post.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, "@", post.username)))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-100 mb-3" }, post.content), post.image_url && /* @__PURE__ */ import_react.default.createElement(
+  )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-4" }, loading && posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Caricamento post...")) : posts.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center py-8" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400" }, "Nessun post ancora. Sii il primo a pubblicare!")) : posts.map((post) => /* @__PURE__ */ import_react.default.createElement("div", { key: post.id, className: "bg-gray-900 p-4 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold" }, post.name ? post.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("div", { className: "font-bold" }, post.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, "@", post.username))), post.user_id === user.id && /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => handleDeletePost(post.id),
+      className: "text-red-500 hover:text-red-400 text-sm",
+      title: "Elimina post"
+    },
+    "\u{1F5D1}\uFE0F"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-100 mb-3" }, post.content), post.image_url && /* @__PURE__ */ import_react.default.createElement(
     "img",
     {
-      src: `${window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app"}${post.image_url}`,
+      src: `http://localhost:3001${post.image_url}`,
       alt: "Post image",
       className: "max-w-full rounded-lg mb-3"
     }
   ), post.video_url && /* @__PURE__ */ import_react.default.createElement(
     "video",
     {
-      src: `${window.location.hostname === "localhost" ? "http://localhost:3001" : "https://web-production-54984.up.railway.app"}${post.video_url}`,
+      src: `http://localhost:3001${post.video_url}`,
       controls: true,
       className: "max-w-full rounded-lg mb-3"
     }
@@ -24039,12 +24316,32 @@ function SimpleConnect() {
           ...prev,
           [post.id]: !prev[post.id]
         }));
+        if (!showComments[post.id]) {
+          loadComments(post.id);
+        }
       },
       className: "flex items-center space-x-1 text-gray-400 hover:text-blue-500"
     },
     /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4AC}"),
     /* @__PURE__ */ import_react.default.createElement("span", null, post.comments_count)
-  ), /* @__PURE__ */ import_react.default.createElement("button", { className: "flex items-center space-x-1 text-gray-400 hover:text-green-500" }, /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4E4}"), /* @__PURE__ */ import_react.default.createElement("span", null, post.shares_count))), showComments[post.id] && /* @__PURE__ */ import_react.default.createElement("div", { className: "border-t border-gray-700 pt-3" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-2" }, /* @__PURE__ */ import_react.default.createElement(
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => handleSharePost(post),
+      className: "flex items-center space-x-1 text-gray-400 hover:text-green-500",
+      title: "Condividi post"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4E4}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Condividi")
+  )), showComments[post.id] && /* @__PURE__ */ import_react.default.createElement("div", { className: "border-t border-gray-700 pt-3" }, comments[post.id] && comments[post.id].length > 0 && /* @__PURE__ */ import_react.default.createElement("div", { className: "mb-3 space-y-2" }, comments[post.id].map((comment) => /* @__PURE__ */ import_react.default.createElement("div", { key: comment.id, className: "bg-gray-800 p-2 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "font-bold text-sm" }, comment.username), /* @__PURE__ */ import_react.default.createElement("span", { className: "text-xs text-gray-400" }, new Date(comment.created_at).toLocaleString("it-IT"))), comment.user_id === user.id && /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => handleDeleteComment(comment.id),
+      className: "text-red-500 hover:text-red-400 text-xs",
+      title: "Elimina commento"
+    },
+    "\u{1F5D1}\uFE0F"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-100" }, comment.content)))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-2" }, /* @__PURE__ */ import_react.default.createElement(
     "input",
     {
       type: "text",
@@ -24060,14 +24357,210 @@ function SimpleConnect() {
       className: "bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
     },
     "Invia"
-  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, new Date(post.created_at).toLocaleString("it-IT")))))), /* @__PURE__ */ import_react.default.createElement("div", { className: "w-80 p-4 border-l border-gray-800" }, /* @__PURE__ */ import_react.default.createElement("h3", { className: "text-lg font-bold mb-4 text-green-400" }, "\u{1F465} Online"), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, onlineUsers.length === 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-400 text-sm" }, "Nessun utente online") : onlineUsers.map((onlineUser) => /* @__PURE__ */ import_react.default.createElement("div", { key: onlineUser.id, className: "bg-gray-800 p-3 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: `w-2 h-2 rounded-full ${onlineUser.status === "online" ? "bg-green-500" : onlineUser.status === "away" ? "bg-yellow-500" : "bg-gray-500"}` }), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300" }, onlineUser.name), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-xs text-gray-500" }, "@", onlineUser.username))))))));
+  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-400" }, new Date(post.created_at).toLocaleString("it-IT")))))), showProfile && /* @__PURE__ */ import_react.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react.default.createElement("h2", { className: "text-xl font-bold text-white" }, "Impostazioni Profilo"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowProfile(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2" }, profileImagePreview ? /* @__PURE__ */ import_react.default.createElement(
+    "img",
+    {
+      src: profileImagePreview,
+      alt: "Avatar",
+      className: "w-20 h-20 rounded-full object-cover"
+    }
+  ) : user.avatar ? /* @__PURE__ */ import_react.default.createElement(
+    "img",
+    {
+      src: `http://localhost:3001${user.avatar}`,
+      alt: "Avatar",
+      className: "w-20 h-20 rounded-full object-cover"
+    }
+  ) : /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-2xl" }, user.name ? user.name.charAt(0).toUpperCase() : "U")), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      ref: profileImageRef,
+      type: "file",
+      accept: "image/*",
+      onChange: handleProfileImageChange,
+      className: "hidden",
+      id: "profile-image-upload"
+    }
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "label",
+    {
+      htmlFor: "profile-image-upload",
+      className: "inline-flex items-center px-3 py-1 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition-colors text-sm"
+    },
+    "\u{1F4F7} Cambia Avatar"
+  ), profileImage && /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: removeProfileImage,
+      className: "ml-2 text-red-500 hover:text-red-400 text-sm"
+    },
+    "\u274C Rimuovi"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Nome"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.name,
+      onChange: (e) => setProfileSettings({ ...profileSettings, name: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white",
+      placeholder: "Il tuo nome"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Username"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.username,
+      onChange: (e) => setProfileSettings({ ...profileSettings, username: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white",
+      placeholder: "@username"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Email"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "email",
+      value: profileSettings.email,
+      onChange: (e) => setProfileSettings({ ...profileSettings, email: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white",
+      placeholder: "email@example.com"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Bio"), /* @__PURE__ */ import_react.default.createElement(
+    "textarea",
+    {
+      value: profileSettings.bio,
+      onChange: (e) => setProfileSettings({ ...profileSettings, bio: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white resize-none",
+      rows: "3",
+      placeholder: "Racconta qualcosa di te..."
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Sito Web"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "url",
+      value: profileSettings.website,
+      onChange: (e) => setProfileSettings({ ...profileSettings, website: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white",
+      placeholder: "https://example.com"
+    }
+  )), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("label", { className: "block text-sm font-medium text-gray-300 mb-1" }, "Localit\xE0"), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: profileSettings.location,
+      onChange: (e) => setProfileSettings({ ...profileSettings, location: e.target.value }),
+      className: "w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white",
+      placeholder: "Citt\xE0, Paese"
+    }
+  ))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex space-x-3 pt-4" }, /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: handleSaveProfile,
+      className: "flex-1 bg-blue-500 text-white py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors"
+    },
+    "\u{1F4BE} Salva"
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowProfile(false),
+      className: "flex-1 bg-gray-600 text-white py-2 rounded-lg font-bold hover:bg-gray-700 transition-colors"
+    },
+    "\u274C Annulla"
+  )))))), showShareModal && selectedPost && /* @__PURE__ */ import_react.default.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "bg-gray-900 p-6 rounded-lg w-full max-w-md" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ import_react.default.createElement("h2", { className: "text-xl font-bold text-white" }, "\u{1F4E4} Condividi Post"), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => setShowShareModal(false),
+      className: "text-gray-400 hover:text-white"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "mb-4 p-3 bg-gray-800 rounded-lg" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-sm text-gray-300 mb-2" }, /* @__PURE__ */ import_react.default.createElement("strong", null, selectedPost.name), " ha scritto:"), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-gray-100" }, selectedPost.content || "Post con media")), /* @__PURE__ */ import_react.default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("facebook", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4D8}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Facebook")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("twitter", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-blue-400 text-white py-3 px-4 rounded-lg hover:bg-blue-500 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F426}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Twitter")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("whatsapp", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4AC}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "WhatsApp")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("telegram", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u2708\uFE0F"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Telegram")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("linkedin", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-blue-700 text-white py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4BC}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "LinkedIn")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("instagram", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-pink-600 text-white py-3 px-4 rounded-lg hover:bg-pink-700 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4F7}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Instagram")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: () => shareToSocial("tiktok", selectedPost),
+      className: "flex items-center justify-center space-x-2 bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F3B5}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "TikTok")
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      onClick: async () => {
+        try {
+          await navigator.clipboard.writeText(
+            `${selectedPost.content || "Guarda questo post su Connect!"}
+
+${window.location.origin}`
+          );
+          alert("\u2705 Link copiato negli appunti!");
+          setShowShareModal(false);
+        } catch (error) {
+          alert("\u274C Errore nella copia del link");
+        }
+      },
+      className: "flex items-center justify-center space-x-2 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, "\u{1F4CB}"),
+    /* @__PURE__ */ import_react.default.createElement("span", null, "Copia Link")
+  )))));
 }
-var SimpleConnect_default = SimpleConnect;
+var DebugConnect_default = DebugConnect;
 
 // main.jsx
 var container = document.getElementById("root");
 var root = (0, import_client.createRoot)(container);
-root.render(/* @__PURE__ */ import_react2.default.createElement(SimpleConnect_default, null));
+root.render(/* @__PURE__ */ import_react2.default.createElement(DebugConnect_default, null));
 /*! Bundled license information:
 
 react/cjs/react.development.js:
