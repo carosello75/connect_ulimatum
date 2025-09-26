@@ -131,13 +131,36 @@ const SimpleSocialApp = () => {
     }
   };
 
-  // Carica notifiche
+  // Carica notifiche - Paradigma semplificato per desktop e mobile
   const loadNotifications = async () => {
     try {
-      const data = await api.notifications();
+      console.log('🔔 Loading notifications...');
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/notifications`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Notifications response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle notifiche');
+      }
+      
+      const data = await response.json();
+      console.log('✅ Notifications loaded:', data.notifications?.length || 0, 'notifications');
+      
       setNotifications(data.notifications || []);
     } catch (error) {
-      console.error('Errore nel caricare le notifiche:', error);
+      console.error('❌ Errore nel caricamento delle notifiche:', error);
+      setNotifications([]);
     }
   };
 
@@ -186,14 +209,37 @@ const SimpleSocialApp = () => {
     }
   };
 
-  // Carica i post
+  // Carica i post - Paradigma semplificato per desktop e mobile
   const loadPosts = async () => {
     try {
       setLoading(true);
-      const data = await api.feed(1, 20);
-      setPosts(data.posts || []);
+      console.log('📝 Loading posts...');
+      
+      // Determina API base
+      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/posts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Posts response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei post');
+      }
+      
+      const posts = await response.json();
+      console.log('✅ Posts loaded:', posts.length, 'posts');
+      
+      setPosts(posts);
     } catch (error) {
-      console.error('Errore nel caricare i post:', error);
+      console.error('❌ Errore nel caricamento dei post:', error);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
