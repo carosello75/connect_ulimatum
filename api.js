@@ -4,6 +4,25 @@ const API_BASE = (typeof window !== 'undefined' && window.API_BASE) ||
     ? 'https://web-production-54984.up.railway.app' 
     : 'http://localhost:3001');
 
+// Fallback per mobile se API non riconosciute
+const getApiBase = () => {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+  
+  console.log('API Base Debug:', {
+    isMobile,
+    isRailway,
+    hostname: window.location.hostname,
+    API_BASE
+  });
+  
+  if (isRailway) {
+    return 'https://web-production-54984.up.railway.app';
+  } else {
+    return 'http://localhost:3001';
+  }
+};
+
 function getToken() {
   try {
     return localStorage.getItem('auth_token') || '';
@@ -40,31 +59,50 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
     }
   }
   
+  const finalApiBase = getApiBase();
+  const fullUrl = `${finalApiBase}${path}`;
+  
   console.log('Request mobile:', {
-    url: `${API_BASE}${path}`,
+    url: fullUrl,
     headers,
     body: isFormData ? 'FormData' : (body ? JSON.stringify(body) : undefined)
   });
   
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
-  });
-  
-  if (!res.ok) {
-    let detail = 'Request failed';
-    try { 
-      const json = await res.json(); 
-      detail = json.error || json.message || detail;
-    } catch (e) {
-      // Ignora errori di parsing
+  try {
+    const res = await fetch(fullUrl, {
+      method,
+      headers,
+      body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
+    });
+    
+    console.log('Response mobile:', {
+      status: res.status,
+      ok: res.ok,
+      url: res.url
+    });
+    
+    if (!res.ok) {
+      let detail = 'Request failed';
+      try { 
+        const json = await res.json(); 
+        detail = json.error || json.message || detail;
+        console.log('Error response:', json);
+      } catch (e) {
+        console.log('Error parsing response:', e);
+        detail = `HTTP ${res.status}: ${res.statusText}`;
+      }
+      const error = new Error(detail);
+      error.status = res.status;
+      throw error;
     }
-    const error = new Error(detail);
-    error.status = res.status;
+    
+    const result = await res.json();
+    console.log('Success response:', result);
+    return result;
+  } catch (error) {
+    console.error('Fetch error mobile:', error);
     throw error;
   }
-  return res.json();
 }
 
 export const api = {

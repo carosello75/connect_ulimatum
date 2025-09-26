@@ -172,13 +172,22 @@ const SimpleSocialApp = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      console.log('Login attempt mobile:', {
+        email: loginData.email,
+        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+        userAgent: navigator.userAgent
+      });
+      
       const response = await api.login(loginData.email, loginData.password);
+      console.log('Login success mobile:', response);
+      
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('auth_user', JSON.stringify(response.user));
       setUser(response.user);
       setShowLogin(false);
       loadPosts();
     } catch (error) {
+      console.error('Login error mobile:', error);
       alert('Errore nel login: ' + error.message);
     }
   };
