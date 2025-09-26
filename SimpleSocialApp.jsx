@@ -219,7 +219,7 @@ const SimpleSocialApp = () => {
       const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
       const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
       
-      const response = await fetch(`${apiBase}/api/posts`, {
+      const response = await fetch(`${apiBase}/api/posts/feed`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -541,7 +541,7 @@ const SimpleSocialApp = () => {
         
         console.log('📤 Uploading file:', selectedFile.name);
         
-        const response = await fetch(`${apiBase}/api/posts`, {
+        const response = await fetch(`${apiBase}/api/posts/feed`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -560,7 +560,7 @@ const SimpleSocialApp = () => {
         console.log('✅ Post con media creato:', result);
       } else {
         // Post solo testo - chiamata diretta
-        const response = await fetch(`${apiBase}/api/posts`, {
+        const response = await fetch(`${apiBase}/api/posts/feed`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
