@@ -104,17 +104,19 @@ const addColumnIfNotExists = (columnName, columnDefinition) => {
   });
 };
 
-// Aggiungi colonne per il profilo
-Promise.all([
-  addColumnIfNotExists('bio', 'TEXT'),
-  addColumnIfNotExists('website', 'TEXT'),
-  addColumnIfNotExists('location', 'TEXT'),
-  addColumnIfNotExists('avatar', 'TEXT')
-]).then(() => {
-  console.log('Colonne profilo aggiunte/verificate');
-}).catch(err => {
-  console.error('Errore nell\'aggiunta delle colonne:', err);
-});
+// Aggiungi colonne per il profilo (versione compatibile)
+setTimeout(() => {
+  addColumnIfNotExists('bio', 'TEXT')
+    .then(() => addColumnIfNotExists('website', 'TEXT'))
+    .then(() => addColumnIfNotExists('location', 'TEXT'))
+    .then(() => addColumnIfNotExists('avatar', 'TEXT'))
+    .then(() => {
+      console.log('Colonne profilo aggiunte/verificate');
+    })
+    .catch(err => {
+      console.error('Errore nell\'aggiunta delle colonne:', err);
+    });
+}, 1000);
 
 // Configurazione Multer per upload file
 const storage = multer.diskStorage({
@@ -967,11 +969,21 @@ app.use((error, req, res, next) => {
 
 // Route di test
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Social Network API is running!',
-    timestamp: new Date().toISOString()
-  });
+  try {
+    res.status(200).json({ 
+      status: 'OK', 
+      message: 'Social Network API is running!',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'Server error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Endpoint per pulire utenti duplicati (solo per sviluppo)
@@ -1305,6 +1317,29 @@ server.listen(PORT, () => {
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`💾 Database: SQLite (socialnetwork.db)`);
   console.log(`📁 Uploads: ./uploads/`);
+  console.log(`✅ Server ready to accept connections`);
+});
+
+// Gestione errori del server
+server.on('error', (err) => {
+  console.error('Server error:', err);
+});
+
+// Gestione chiusura graceful
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
