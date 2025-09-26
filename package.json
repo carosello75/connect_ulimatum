@@ -9,7 +9,7 @@
     "start:prod": "npm run build && npm run api",
     "build": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js",
     "build:watch": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js --watch",
-    "api": "node backend/server-simple.cjs",
+    "api": "node backend/server.cjs",
     "api:dev": "nodemon backend/server.cjs"
   },
   "dependencies": {
