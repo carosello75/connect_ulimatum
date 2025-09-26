@@ -1267,6 +1267,43 @@ app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image
   }
 });
 
+// Profilo pubblico
+app.get('/api/users/profile/:username', (req, res) => {
+  const { username } = req.params;
+  
+  db.get(
+    'SELECT id, username, name, email, bio, website, location, avatar, created_at, posts_count, comments_count, likes_count FROM users WHERE username = ?',
+    [username],
+    (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Errore del server' });
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: 'Utente non trovato' });
+      }
+      
+      // Carica i post dell'utente
+      db.all(
+        'SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+        [user.id],
+        (err, posts) => {
+          if (err) {
+            return res.status(500).json({ error: 'Errore nel caricamento dei post' });
+          }
+          
+          res.json({
+            user: {
+              ...user,
+              posts: posts || []
+            }
+          });
+        }
+      );
+    }
+  );
+});
+
 // Cambia password
 app.post('/api/auth/change-password', authenticateToken, (req, res) => {
   const { currentPassword, newPassword } = req.body;

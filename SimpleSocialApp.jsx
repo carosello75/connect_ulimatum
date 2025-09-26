@@ -29,6 +29,11 @@ const SimpleSocialApp = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   
+  // Stati per profili pubblici
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileUser, setProfileUser] = useState(null);
+  const [profilePosts, setProfilePosts] = useState([]);
+  
   // Stati per autenticazione
   const [showLogin, setShowLogin] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -93,6 +98,18 @@ const SimpleSocialApp = () => {
       setShowLogin(true);
     }
   }, []);
+
+  // Carica profilo pubblico
+  const loadUserProfile = async (username) => {
+    try {
+      const response = await api.profile(username);
+      setProfileUser(response.user);
+      setProfilePosts(response.user.posts || []);
+      setShowProfile(true);
+    } catch (error) {
+      alert('Errore nel caricamento del profilo: ' + error.message);
+    }
+  };
 
   // Carica notifiche
   const loadNotifications = async () => {
@@ -1092,8 +1109,18 @@ const SimpleSocialApp = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-bold">{post.name}</span>
-                        <span className="text-gray-500 text-sm">@{post.username}</span>
+                        <button
+                          onClick={() => loadUserProfile(post.username)}
+                          className="font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                        >
+                          {post.name}
+                        </button>
+                        <button
+                          onClick={() => loadUserProfile(post.username)}
+                          className="text-gray-500 text-sm hover:text-blue-400 hover:underline"
+                        >
+                          @{post.username}
+                        </button>
                         <span className="text-gray-500 text-sm">
                           {new Date(post.created_at).toLocaleDateString()}
                         </span>
@@ -1905,6 +1932,106 @@ const SimpleSocialApp = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal profilo pubblico */}
+      {showProfile && profileUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">👤 Profilo di {profileUser.name}</h3>
+              <button
+                onClick={() => setShowProfile(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Header profilo */}
+            <div className="flex items-center space-x-4 mb-6 p-4 bg-gray-800 rounded-lg">
+              <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center overflow-hidden">
+                {profileUser.avatar ? (
+                  <img src={profileUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white text-xl">{profileUser.name?.charAt(0) || 'U'}</span>
+                )}
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-white">{profileUser.name}</h4>
+                <p className="text-gray-400">@{profileUser.username}</p>
+                {profileUser.bio && (
+                  <p className="text-gray-300 text-sm mt-1">{profileUser.bio}</p>
+                )}
+                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-400">
+                  {profileUser.location && (
+                    <span>📍 {profileUser.location}</span>
+                  )}
+                  {profileUser.website && (
+                    <a href={profileUser.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                      🌐 Website
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Statistiche */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-blue-400">{profileUser.posts_count || 0}</div>
+                <div className="text-gray-400 text-sm">Post</div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-400">{profileUser.comments_count || 0}</div>
+                <div className="text-gray-400 text-sm">Commenti</div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-red-400">{profileUser.likes_count || 0}</div>
+                <div className="text-gray-400 text-sm">Like</div>
+              </div>
+            </div>
+            
+            {/* Post dell'utente */}
+            <div>
+              <h5 className="text-lg font-semibold text-white mb-4">📝 Post recenti</h5>
+              {profilePosts.length > 0 ? (
+                <div className="space-y-4">
+                  {profilePosts.map((post) => (
+                    <div key={post.id} className="bg-gray-800 rounded-lg p-4">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm">{profileUser.name?.charAt(0) || 'U'}</span>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{profileUser.name}</p>
+                          <p className="text-gray-400 text-sm">@{profileUser.username}</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 mb-3">{post.content}</p>
+                      {post.media_url && (
+                        <div className="mb-3">
+                          {post.media_type === 'image' ? (
+                            <img src={post.media_url} alt="Media" className="w-full h-64 object-cover rounded-lg" />
+                          ) : (
+                            <video src={post.media_url} controls className="w-full h-64 object-cover rounded-lg" />
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-4 text-sm text-gray-400">
+                        <span>❤️ {post.likes_count || 0}</span>
+                        <span>💬 {post.comments_count || 0}</span>
+                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-center py-8">Nessun post ancora</p>
+              )}
+            </div>
           </div>
         </div>
       )}
