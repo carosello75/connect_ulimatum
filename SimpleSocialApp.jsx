@@ -82,8 +82,8 @@ const SimpleSocialApp = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const resetToken = urlParams.get('token');
     
-    if (resetToken) {
-      // Se c'è un token di reset, verifica che sia valido
+    if (resetToken && resetToken.length > 10) {
+      // Se c'è un token di reset valido, verifica che sia valido
       verifyResetToken(resetToken);
       return;
     }
