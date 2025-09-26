@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const socketIo = require('socket.io');
+const sharp = require('sharp');
 
 const app = express();
 const server = http.createServer(app);
@@ -136,7 +137,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB
+    fileSize: 10 * 1024 * 1024 // 10MB limite ridotto
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
@@ -146,6 +147,33 @@ const upload = multer({
     }
   }
 });
+
+// Middleware per ridimensionare le immagini
+const resizeImage = async (req, res, next) => {
+  if (req.file && req.file.mimetype.startsWith('image/')) {
+    try {
+      const inputPath = req.file.path;
+      const outputPath = inputPath.replace(path.extname(inputPath), '_resized' + path.extname(inputPath));
+      
+      await sharp(inputPath)
+        .resize(800, 600, { 
+          fit: 'inside',
+          withoutEnlargement: true 
+        })
+        .jpeg({ quality: 80 })
+        .toFile(outputPath);
+      
+      // Sostituisci il file originale con quello ridimensionato
+      fs.unlinkSync(inputPath);
+      fs.renameSync(outputPath, inputPath);
+      
+      console.log(`Immagine ridimensionata: ${req.file.filename}`);
+    } catch (error) {
+      console.error('Errore nel ridimensionamento:', error);
+    }
+  }
+  next();
+};
 
 // Inizializzazione tabelle database
 db.serialize(() => {
@@ -447,7 +475,7 @@ app.get('/api/posts/feed', authenticateToken, (req, res) => {
   );
 });
 
-app.post('/api/posts', authenticateToken, upload.single('media'), (req, res) => {
+app.post('/api/posts', authenticateToken, upload.single('media'), resizeImage, (req, res) => {
   const { content } = req.body;
   const userId = req.user.id;
   let imageUrl = null;
@@ -1159,7 +1187,7 @@ app.post('/api/auth/delete-account', authenticateToken, (req, res) => {
 });
 
 // Aggiorna profilo
-app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image', maxCount: 1 }]), (req, res) => {
+app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image', maxCount: 1 }]), resizeImage, (req, res) => {
   const userId = req.user.id;
   const { name, username, email, bio, website, location } = req.body;
   
@@ -1265,6 +1293,103 @@ app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image
       });
     });
   }
+});
+
+// Pagina reset password
+app.get('/reset-password', (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(400).send('Token di reset mancante');
+  }
+  
+  // Verifica se il token esiste e non è scaduto
+  db.get(
+    'SELECT * FROM password_resets WHERE token = ? AND expires_at > datetime("now")',
+    [token],
+    (err, reset) => {
+      if (err || !reset) {
+        return res.status(400).send('Token non valido o scaduto');
+      }
+      
+      // Mostra la pagina di reset password
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Reset Password - Connect</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
+            .container { max-width: 400px; margin: 50px auto; background: #2a2a2a; padding: 30px; border-radius: 10px; }
+            h1 { text-align: center; color: #3b82f6; margin-bottom: 30px; }
+            .form-group { margin-bottom: 20px; }
+            label { display: block; margin-bottom: 5px; color: #ccc; }
+            input { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 5px; background: #333; color: white; box-sizing: border-box; }
+            button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+            button:hover { background: #2563eb; }
+            .error { color: #ef4444; margin-top: 10px; }
+            .success { color: #10b981; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🔒 Reset Password</h1>
+            <form id="resetForm">
+              <div class="form-group">
+                <label for="newPassword">Nuova Password:</label>
+                <input type="password" id="newPassword" required>
+              </div>
+              <div class="form-group">
+                <label for="confirmPassword">Conferma Password:</label>
+                <input type="password" id="confirmPassword" required>
+              </div>
+              <button type="submit">Reset Password</button>
+              <div id="message"></div>
+            </form>
+          </div>
+          <script>
+            document.getElementById('resetForm').addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const newPassword = document.getElementById('newPassword').value;
+              const confirmPassword = document.getElementById('confirmPassword').value;
+              const messageDiv = document.getElementById('message');
+              
+              if (newPassword !== confirmPassword) {
+                messageDiv.innerHTML = '<div class="error">Le password non coincidono</div>';
+                return;
+              }
+              
+              if (newPassword.length < 6) {
+                messageDiv.innerHTML = '<div class="error">La password deve essere di almeno 6 caratteri</div>';
+                return;
+              }
+              
+              try {
+                const response = await fetch('/api/auth/reset-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ token: '${token}', newPassword })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                  messageDiv.innerHTML = '<div class="success">Password resettata con successo! <a href="/" style="color: #3b82f6;">Torna al login</a></div>';
+                  document.getElementById('resetForm').style.display = 'none';
+                } else {
+                  messageDiv.innerHTML = '<div class="error">' + result.error + '</div>';
+                }
+              } catch (error) {
+                messageDiv.innerHTML = '<div class="error">Errore di connessione</div>';
+              }
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    }
+  );
 });
 
 // Profilo pubblico
