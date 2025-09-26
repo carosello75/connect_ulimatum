@@ -10,6 +10,7 @@ const fs = require('fs');
 const http = require('http');
 const socketIo = require('socket.io');
 const sharp = require('sharp');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,15 @@ const io = socketIo(server, {
 // Configurazione
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Configurazione email
+const transporter = nodemailer.createTransporter({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'your-email@gmail.com',
+    pass: process.env.EMAIL_PASS || 'your-app-password'
+  }
+});
 
 // Middleware
 app.use(cors());
@@ -1082,13 +1092,46 @@ app.post('/api/auth/forgot-password', (req, res) => {
         
         const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
         
-        // Invia email (per ora simuliamo)
-        console.log(`Reset password token per ${email}: ${resetToken}`);
-        console.log(`Link di reset: ${resetLink}`);
+        // Invia email reale
+        const mailOptions = {
+          from: process.env.EMAIL_USER || 'your-email@gmail.com',
+          to: email,
+          subject: 'Reset Password - Connect Social Network',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a1a; color: white; padding: 20px;">
+              <h2 style="color: #3b82f6; text-align: center;">🔒 Reset Password</h2>
+              <p>Ciao!</p>
+              <p>Hai richiesto di resettare la password per il tuo account su Connect Social Network.</p>
+              <p>Clicca il link qui sotto per creare una nuova password:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetLink}" style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                  Reset Password
+                </a>
+              </div>
+              <p>Se non hai richiesto questo reset, ignora questa email.</p>
+              <p>Il link scadrà tra 24 ore.</p>
+              <hr style="border: 1px solid #333; margin: 20px 0;">
+              <p style="color: #666; font-size: 12px;">Connect Social Network</p>
+            </div>
+          `
+        };
         
-        res.json({ 
-          message: 'Email di reset inviata',
-          resetLink: resetLink // Solo per sviluppo, in produzione non inviare il link
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Errore nell\'invio email:', error);
+            // Fallback: mostra il link nei log
+            console.log(`Reset password token per ${email}: ${resetToken}`);
+            console.log(`Link di reset: ${resetLink}`);
+            res.json({ 
+              message: 'Email di reset inviata (fallback)',
+              resetLink: resetLink
+            });
+          } else {
+            console.log('Email inviata con successo:', info.response);
+            res.json({ 
+              message: 'Email di reset inviata con successo'
+            });
+          }
         });
       }
     );
@@ -1311,129 +1354,33 @@ app.post('/api/profile/update', authenticateToken, upload.fields([{ name: 'image
   }
 });
 
-// Pagina reset password
-app.get('/reset-password', (req, res) => {
-  const token = req.query.token;
-  console.log('Reset password richiesto con token:', token);
+// Endpoint per verificare token di reset (usato dal frontend)
+app.get('/api/auth/verify-reset-token/:token', (req, res) => {
+  const token = req.params.token;
+  console.log('Verifica token di reset:', token);
   
-  if (!token) {
-    return res.status(400).send('Token di reset mancante');
-  }
-  
-  // Prima controlla tutti i token nel database per debug
-  db.all('SELECT * FROM password_resets ORDER BY created_at DESC LIMIT 5', (err, allTokens) => {
-    if (err) {
-      console.error('Errore nel recuperare i token:', err);
-    } else {
-      console.log('Ultimi 5 token nel database:', allTokens);
-    }
-  });
-  
-  // Verifica se il token esiste e non è scaduto
   db.get(
     'SELECT * FROM password_resets WHERE token = ?',
     [token],
     (err, reset) => {
-      console.log('Token trovato nel database:', reset);
-      
       if (err) {
         console.error('Errore nel database:', err);
-        return res.status(500).send('Errore del server');
+        return res.status(500).json({ error: 'Errore del server' });
       }
       
       if (!reset) {
-        console.log('Token non trovato nel database');
-        return res.status(400).send('Token non valido');
+        return res.status(400).json({ error: 'Token non valido' });
       }
       
       // Verifica se il token è scaduto
       const now = new Date();
       const expiresAt = new Date(reset.expires_at);
-      console.log('Token scade il:', expiresAt);
-      console.log('Ora è:', now);
       
       if (now > expiresAt) {
-        console.log('Token scaduto');
-        return res.status(400).send('Token scaduto');
+        return res.status(400).json({ error: 'Token scaduto' });
       }
       
-      // Mostra la pagina di reset password
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Reset Password - Connect</title>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
-            .container { max-width: 400px; margin: 50px auto; background: #2a2a2a; padding: 30px; border-radius: 10px; }
-            h1 { text-align: center; color: #3b82f6; margin-bottom: 30px; }
-            .form-group { margin-bottom: 20px; }
-            label { display: block; margin-bottom: 5px; color: #ccc; }
-            input { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 5px; background: #333; color: white; box-sizing: border-box; }
-            button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-            button:hover { background: #2563eb; }
-            .error { color: #ef4444; margin-top: 10px; }
-            .success { color: #10b981; margin-top: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>🔒 Reset Password</h1>
-            <form id="resetForm">
-              <div class="form-group">
-                <label for="newPassword">Nuova Password:</label>
-                <input type="password" id="newPassword" required>
-              </div>
-              <div class="form-group">
-                <label for="confirmPassword">Conferma Password:</label>
-                <input type="password" id="confirmPassword" required>
-              </div>
-              <button type="submit">Reset Password</button>
-              <div id="message"></div>
-            </form>
-          </div>
-          <script>
-            document.getElementById('resetForm').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const newPassword = document.getElementById('newPassword').value;
-              const confirmPassword = document.getElementById('confirmPassword').value;
-              const messageDiv = document.getElementById('message');
-              
-              if (newPassword !== confirmPassword) {
-                messageDiv.innerHTML = '<div class="error">Le password non coincidono</div>';
-                return;
-              }
-              
-              if (newPassword.length < 6) {
-                messageDiv.innerHTML = '<div class="error">La password deve essere di almeno 6 caratteri</div>';
-                return;
-              }
-              
-              try {
-                const response = await fetch('/api/auth/reset-password', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ token: '${token}', newPassword })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                  messageDiv.innerHTML = '<div class="success">Password resettata con successo! <a href="/" style="color: #3b82f6;">Torna al login</a></div>';
-                  document.getElementById('resetForm').style.display = 'none';
-                } else {
-                  messageDiv.innerHTML = '<div class="error">' + result.error + '</div>';
-                }
-              } catch (error) {
-                messageDiv.innerHTML = '<div class="error">Errore di connessione</div>';
-              }
-            });
-          </script>
-        </body>
-        </html>
-      `);
+      res.json({ valid: true });
     }
   );
 });

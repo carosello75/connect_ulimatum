@@ -61,6 +61,7 @@ export const api = {
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
   register: (username, email, password, name) => request('/api/auth/register', { method: 'POST', body: { username, email, password, name } }),
   forgotPassword: (email) => request('/api/auth/forgot-password', { method: 'POST', body: { email } }),
+  verifyResetToken: (token) => request(`/api/auth/verify-reset-token/${token}`),
   resetPassword: (token, newPassword) => request('/api/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
   deleteAccount: (password, reason) => request('/api/auth/delete-account', { method: 'POST', body: { password, reason }, auth: true }),
   updateProfile: (profileData, image) => {

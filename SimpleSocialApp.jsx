@@ -78,6 +78,16 @@ const SimpleSocialApp = () => {
 
   // Carica utente al mount
   useEffect(() => {
+    // Controlla se c'è un token di reset nell'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+    
+    if (resetToken) {
+      // Se c'è un token di reset, verifica che sia valido
+      verifyResetToken(resetToken);
+      return;
+    }
+    
     const token = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('auth_user');
     if (token && userData) {
@@ -98,6 +108,19 @@ const SimpleSocialApp = () => {
       setShowLogin(true);
     }
   }, []);
+
+  // Verifica token di reset
+  const verifyResetToken = async (token) => {
+    try {
+      await api.verifyResetToken(token);
+      setResetToken(token);
+      setShowResetForm(true);
+    } catch (error) {
+      alert('Token non valido o scaduto: ' + error.message);
+      // Rimuovi il token dall'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
 
   // Carica profilo pubblico
   const loadUserProfile = async (username) => {
@@ -2048,6 +2071,96 @@ const SimpleSocialApp = () => {
                 <p className="text-gray-400 text-center py-8">Nessun post ancora</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Reset Password */}
+      {showResetForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">🔒 Reset Password</h3>
+              <button
+                onClick={() => {
+                  setShowResetForm(false);
+                  setResetToken('');
+                  // Rimuovi il token dall'URL
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Nuova Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
+                    placeholder="Inserisci nuova password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Conferma Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
+                    placeholder="Conferma nuova password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetForm(false);
+                    setResetToken('');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                  }}
+                  className="flex-1 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Reset Password
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
