@@ -14,7 +14,12 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
   
   if (auth) {
     const token = getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('Token inviato:', token.substring(0, 20) + '...');
+    } else {
+      console.log('Nessun token trovato');
+    }
   }
   
   console.log('API Request:', {
