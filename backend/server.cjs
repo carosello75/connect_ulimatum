@@ -1055,7 +1055,7 @@ app.post('/api/auth/forgot-password', (req, res) => {
     // Genera token di reset
     const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600000); // 1 ora
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 ore
     
     // Salva il token nel database
     db.run(
