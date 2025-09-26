@@ -245,7 +245,7 @@ const SimpleSocialApp = () => {
     }
   };
 
-  // Login - Paradigma semplificato per mobile
+  // Login - Fix per problemi di autenticazione
   const handleLogin = async (e) => {
     e.preventDefault();
     
@@ -261,14 +261,11 @@ const SimpleSocialApp = () => {
     try {
       console.log('🔐 Login attempt:', {
         email: loginData.email,
-        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
         timestamp: new Date().toISOString()
       });
       
-      // Chiamata API diretta per evitare problemi di routing
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
-      const apiBase = isRailway ? 'https://web-production-54984.up.railway.app' : 'http://localhost:3001';
+      // Usa sempre localhost per il test locale
+      const apiBase = 'http://localhost:3001';
       
       console.log('🌐 API Base:', apiBase);
       
