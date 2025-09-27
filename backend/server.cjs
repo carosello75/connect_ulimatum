@@ -49,13 +49,22 @@ app.use((req, res, next) => {
   }
 });
 
-// Middleware
+// Fix CORS per mobile
 app.use(cors({
-  origin: ['http://localhost:3001', 'https://web-production-5cc7e.up.railway.app', 'https://*.up.railway.app', 'https://*.railway.app'],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Force HTTPS e fix headers mobile
+app.use((req, res, next) => {
+  if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
+    return res.redirect(`https://${req.header('host')}${req.url}`);
+  }
+  res.header('Access-Control-Allow-Credentials', true);
+  next();
+});
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static('uploads'));
