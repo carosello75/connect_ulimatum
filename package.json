@@ -10,7 +10,8 @@
     "build": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js",
     "build:watch": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js --watch",
     "api": "node backend/server.cjs",
-    "api:dev": "nodemon backend/server.cjs"
+    "api:dev": "nodemon backend/server.cjs",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

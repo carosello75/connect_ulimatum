@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { api } from './api.js';
 
-// API base dinamica per sviluppo e produzione
+// API base dinamica per tutti gli ambienti
 const getApiBase = () => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isNgrok = window.location.hostname.includes('ngrok');
+  const isVercel = window.location.hostname.includes('vercel.app');
   
   if (isLocalhost) {
     return 'http://localhost:3001';
   } else if (isNgrok) {
     return window.location.origin; // Usa lo stesso dominio ngrok
+  } else if (isVercel) {
+    return window.location.origin; // Usa lo stesso dominio Vercel
   } else {
     return 'https://web-production-5cc7e.up.railway.app';
   }
