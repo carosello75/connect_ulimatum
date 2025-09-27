@@ -5,7 +5,15 @@ import { api } from './api.js';
 // API base dinamica per sviluppo e produzione
 const getApiBase = () => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  return isLocalhost ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app';
+  const isNgrok = window.location.hostname.includes('ngrok');
+  
+  if (isLocalhost) {
+    return 'http://localhost:3001';
+  } else if (isNgrok) {
+    return window.location.origin; // Usa lo stesso dominio ngrok
+  } else {
+    return 'https://web-production-5cc7e.up.railway.app';
+  }
 };
 
 const API_BASE = getApiBase();

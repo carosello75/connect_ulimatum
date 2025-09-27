@@ -1130,14 +1130,32 @@ app.delete('/api/admin/cleanup-duplicates', (req, res) => {
 app.post('/api/auth/forgot-password', (req, res) => {
   const { email } = req.body;
   
+  console.log('🔍 Password dimenticata - Email ricevuta:', email);
+  console.log('🔍 Password dimenticata - Tipo email:', typeof email);
+  console.log('🔍 Password dimenticata - Email trim:', email?.trim());
+  
   if (!email) {
     return res.status(400).json({ error: 'Email richiesta' });
   }
   
   // Verifica se l'utente esiste
-  db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
+  db.get('SELECT * FROM users WHERE email = ?', [email.trim()], (err, user) => {
     if (err) {
+      console.log('❌ Errore database:', err);
       return res.status(500).json({ error: 'Errore del server' });
+    }
+    
+    console.log('🔍 Utente trovato:', user ? 'SÌ' : 'NO');
+    if (user) {
+      console.log('✅ Utente:', { id: user.id, email: user.email, username: user.username });
+    } else {
+      console.log('❌ Nessun utente trovato per email:', email.trim());
+      // Debug: mostra tutte le email nel database
+      db.all('SELECT email FROM users', (err, emails) => {
+        if (!err) {
+          console.log('📧 Email nel database:', emails.map(u => u.email));
+        }
+      });
     }
     
     if (!user) {
