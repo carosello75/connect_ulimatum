@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { api } from './api.js';
 
-// API base unica per tutto
-const API_BASE = 'https://web-production-5cc7e.up.railway.app';
+// API base dinamica per sviluppo e produzione
+const getApiBase = () => {
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocalhost ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app';
+};
+
+const API_BASE = getApiBase();
 
 const SimpleSocialApp = () => {
   // Stati principali
@@ -139,8 +144,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🔔 Loading notifications...');
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/notifications`, {
         method: 'GET',
@@ -171,8 +176,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('👥 Loading online users...');
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/online-users`, {
         method: 'GET',
@@ -216,8 +221,8 @@ const SimpleSocialApp = () => {
       setLoading(true);
       console.log('📝 Loading posts...');
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         method: 'GET',
@@ -264,8 +269,8 @@ const SimpleSocialApp = () => {
         timestamp: new Date().toISOString()
       });
       
-    // Usa API_BASE unica
-    const apiBase = API_BASE;
+    // Usa API base dinamica
+    const apiBase = getApiBase();
       
       console.log('🌐 API Base:', apiBase);
       
@@ -539,8 +544,8 @@ const SimpleSocialApp = () => {
         ? `${generatedTitle}\n\n${generatedDescription}\n\n---\n\n${newPost}`
         : newPost;
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       if (selectedFile) {
         // Post con media - chiamata diretta
@@ -806,8 +811,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('💬 Loading comments for post:', postId);
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: 'GET',
@@ -841,7 +846,7 @@ const SimpleSocialApp = () => {
     try {
       console.log('💬 Adding comment to post:', postId);
       
-      const response = await fetch(`${API_BASE}/api/posts/${postId}/comments`, {
+      const response = await fetch(`${getApiBase()}/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -881,8 +886,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🗑️ Deleting comment:', commentId);
       
-      // Usa API_BASE unica
-      const apiBase = API_BASE;
+      // Usa API base dinamica
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
         method: 'DELETE',
@@ -1472,7 +1477,7 @@ const SimpleSocialApp = () => {
                     
                     {post.image_url && (
                       <img
-                        src={`${API_BASE}${post.image_url}`}
+                        src={`${getApiBase()}${post.image_url}`}
                         alt="Post image"
                         className="max-w-full rounded-lg mb-3"
                       />
@@ -1480,7 +1485,7 @@ const SimpleSocialApp = () => {
                     
                     {post.video_url && (
                       <video
-                        src={`${API_BASE}${post.video_url}`}
+                        src={`${getApiBase()}${post.video_url}`}
                         controls
                         className="max-w-full rounded-lg mb-3"
                       />
