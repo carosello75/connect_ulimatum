@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { api } from './api.js';
 
-// Funzione unica per determinare l'API base
-const getApiBase = () => {
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  return isLocalhost ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app';
-};
+// API base unica per tutto
+const API_BASE = 'https://web-production-5cc7e.up.railway.app';
 
 const SimpleSocialApp = () => {
   // Stati principali
@@ -22,9 +19,9 @@ const SimpleSocialApp = () => {
   const [generatedDescription, setGeneratedDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Stati per commenti
+  // Stati per commenti (separati per post)
   const [showComments, setShowComments] = useState(null);
-  const [newComment, setNewComment] = useState('');
+  const [newComments, setNewComments] = useState({});
   const [comments, setComments] = useState({});
   
   // Stati per notifiche e utenti online
@@ -142,8 +139,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🔔 Loading notifications...');
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       const response = await fetch(`${apiBase}/api/notifications`, {
         method: 'GET',
@@ -174,8 +171,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('👥 Loading online users...');
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       const response = await fetch(`${apiBase}/api/online-users`, {
         method: 'GET',
@@ -219,8 +216,8 @@ const SimpleSocialApp = () => {
       setLoading(true);
       console.log('📝 Loading posts...');
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         method: 'GET',
@@ -267,8 +264,8 @@ const SimpleSocialApp = () => {
         timestamp: new Date().toISOString()
       });
       
-    // Usa la funzione unica per l'API base
-    const apiBase = getApiBase();
+    // Usa API_BASE unica
+    const apiBase = API_BASE;
       
       console.log('🌐 API Base:', apiBase);
       
@@ -542,8 +539,8 @@ const SimpleSocialApp = () => {
         ? `${generatedTitle}\n\n${generatedDescription}\n\n---\n\n${newPost}`
         : newPost;
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       if (selectedFile) {
         // Post con media - chiamata diretta
@@ -809,8 +806,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('💬 Loading comments for post:', postId);
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: 'GET',
@@ -838,21 +835,19 @@ const SimpleSocialApp = () => {
 
   // Aggiungi commento
   const handleAddComment = async (postId) => {
-    if (!newComment.trim()) return;
+    const content = newComments[postId]?.trim() || '';
+    if (!content) return;
     
     try {
       console.log('💬 Adding comment to post:', postId);
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
-      
-      const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
+      const response = await fetch(`${API_BASE}/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content: newComment })
+        body: JSON.stringify({ content })
       });
       
       console.log('📡 Add comment response status:', response.status);
@@ -864,7 +859,7 @@ const SimpleSocialApp = () => {
       const result = await response.json();
       console.log('✅ Comment added:', result);
       
-      setNewComment('');
+      setNewComments({ ...newComments, [postId]: '' });
       await loadComments(postId);
       
       // Aggiorna il contatore commenti nel post
@@ -886,8 +881,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🗑️ Deleting comment:', commentId);
       
-      // Usa la funzione unica per l'API base
-      const apiBase = getApiBase();
+      // Usa API_BASE unica
+      const apiBase = API_BASE;
       
       const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
         method: 'DELETE',
@@ -1477,7 +1472,7 @@ const SimpleSocialApp = () => {
                     
                     {post.image_url && (
                       <img
-                        src={`http://localhost:3001${post.image_url}`}
+                        src={`${API_BASE}${post.image_url}`}
                         alt="Post image"
                         className="max-w-full rounded-lg mb-3"
                       />
@@ -1485,7 +1480,7 @@ const SimpleSocialApp = () => {
                     
                     {post.video_url && (
                       <video
-                        src={`http://localhost:3001${post.video_url}`}
+                        src={`${API_BASE}${post.video_url}`}
                         controls
                         className="max-w-full rounded-lg mb-3"
                       />
@@ -1542,15 +1537,15 @@ const SimpleSocialApp = () => {
                           <div className="flex-1 flex space-x-2">
                             <input
                               type="text"
-                              value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
+                              value={newComments[post.id] || ''}
+                              onChange={(e) => setNewComments({...newComments, [post.id]: e.target.value})}
                               placeholder="Scrivi un commento..."
                               className="flex-1 bg-gray-800 text-white placeholder-gray-500 px-3 py-2 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
                               onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                             />
                             <button
                               onClick={() => handleAddComment(post.id)}
-                              disabled={!newComment.trim()}
+                              disabled={!newComments[post.id]?.trim()}
                               className="bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                             >
                               Invia
