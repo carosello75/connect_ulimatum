@@ -7,6 +7,14 @@ const getApiBase = () => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isNgrok = window.location.hostname.includes('ngrok');
   const isVercel = window.location.hostname.includes('vercel.app');
+  const isRailway = window.location.hostname.includes('railway.app');
+  
+  // Fix per mobile - forza HTTPS
+  if (window.location.protocol !== 'https:' && !isLocalhost) {
+    console.log('🔒 Forzando HTTPS per mobile');
+    window.location.replace(window.location.href.replace('http:', 'https:'));
+    return 'https://web-production-5cc7e.up.railway.app';
+  }
   
   if (isLocalhost) {
     return 'http://localhost:3001';
@@ -14,6 +22,8 @@ const getApiBase = () => {
     return window.location.origin; // Usa lo stesso dominio ngrok
   } else if (isVercel) {
     return window.location.origin; // Usa lo stesso dominio Vercel
+  } else if (isRailway) {
+    return 'https://web-production-5cc7e.up.railway.app';
   } else {
     return 'https://web-production-5cc7e.up.railway.app';
   }
