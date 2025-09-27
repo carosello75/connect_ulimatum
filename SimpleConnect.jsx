@@ -48,7 +48,7 @@ function SimpleConnect() {
       setLoading(true);
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/posts/feed`, {
@@ -73,7 +73,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/notifications`, {
@@ -96,7 +96,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
@@ -125,7 +125,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/online-users`, {
@@ -173,7 +173,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/posts/${postId}/like`, {
@@ -198,7 +198,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
@@ -231,7 +231,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
@@ -273,7 +273,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const response = await fetch(`${apiBase}/api/auth/register`, {
         method: 'POST',
@@ -311,7 +311,7 @@ function SimpleConnect() {
     try {
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+        : 'https://web-production-5cc7e.up.railway.app';
       
       const token = localStorage.getItem('auth_token');
       
@@ -636,14 +636,14 @@ function SimpleConnect() {
                   {/* Media */}
                   {post.image_url && (
                     <img 
-                      src={`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://web-production-54984.up.railway.app'}${post.image_url}`}
+                      src={`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app'}${post.image_url}`}
                       alt="Post image" 
                       className="max-w-full rounded-lg mb-3"
                     />
                   )}
                   {post.video_url && (
                     <video 
-                      src={`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://web-production-54984.up.railway.app'}${post.video_url}`}
+                      src={`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app'}${post.video_url}`}
                       controls 
                       className="max-w-full rounded-lg mb-3"
                     />

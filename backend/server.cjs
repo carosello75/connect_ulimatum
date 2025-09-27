@@ -35,10 +35,29 @@ const transporter = nodemailer.createTransport({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3001', 'https://web-production-5cc7e.up.railway.app', 'https://*.up.railway.app', 'https://*.railway.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static('uploads'));
+
+// Fix per richieste mobile
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Crea directory per uploads se non esistono
 if (!fs.existsSync('uploads')) {
@@ -1150,7 +1169,7 @@ app.post('/api/auth/forgot-password', (req, res) => {
         const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
           ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
           : (process.env.NODE_ENV === 'production' 
-              ? 'https://web-production-54984.up.railway.app' 
+              ? 'https://web-production-5cc7e.up.railway.app' 
               : `${req.protocol}://${req.get('host')}`);
         
         const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;

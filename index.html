@@ -22,6 +22,30 @@
         }
       }
     }
+    
+    // Fix per Railway mobile
+    document.addEventListener('DOMContentLoaded', function() {
+      // Forza il layout mobile su dispositivi piccoli
+      if (window.innerWidth <= 768) {
+        document.body.classList.add('mobile-backend');
+      }
+      
+      // Listener per resize
+      window.addEventListener('resize', function() {
+        if (window.innerWidth <= 768) {
+          document.body.classList.add('mobile-backend');
+        } else {
+          document.body.classList.remove('mobile-backend');
+        }
+      });
+      
+      // Fix specifico per Railway mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        document.body.classList.add('mobile-backend');
+        console.log('📱 Mobile device detected, applying mobile layout');
+      }
+    });
   </script>
   <style>
     /* Minimal X-like accent and borders */
@@ -348,6 +372,59 @@
       .mobile-backend .mobile-post-container:hover {
         border-color: #3b82f6 !important;
         box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2) !important;
+      }
+      
+      /* Fix per Railway mobile */
+      @media (max-width: 768px) {
+        .mobile-backend {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        .mobile-backend .min-h-screen {
+          min-height: 100vh !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        
+        .mobile-backend .flex {
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        
+        .mobile-backend .grid {
+          display: grid !important;
+          grid-template-columns: 1fr !important;
+        }
+        
+        .mobile-backend .space-x-4 > * + * {
+          margin-left: 0 !important;
+          margin-top: 1rem !important;
+        }
+        
+        .mobile-backend .space-y-4 > * + * {
+          margin-top: 1rem !important;
+        }
+        
+        /* Fix specifico per Railway mobile */
+        body {
+          overflow-x: hidden !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        #root {
+          width: 100% !important;
+          max-width: 100% !important;
+          overflow-x: hidden !important;
+        }
+        
+        .mobile-backend * {
+          box-sizing: border-box !important;
+        }
       }
     }
   </style>

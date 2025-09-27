@@ -177,11 +177,6 @@ function TestConnect() {
             </button>
           </form>
           
-          <div className="mt-4 text-center text-sm text-gray-400">
-            <p>Credenziali di test:</p>
-            <p>Email: test2@example.com</p>
-            <p>Password: password123</p>
-          </div>
         </div>
       </div>
     );

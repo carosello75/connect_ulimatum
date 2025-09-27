@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, Send, Home, User, Plus, Image, Video, Bell, Users, Trash2, MoreHorizontal, Edit3, ExternalLink, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { api } from './api.js';
 
+// Funzione unica per determinare l'API base
+const getApiBase = () => {
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocalhost ? 'http://localhost:3001' : 'https://web-production-5cc7e.up.railway.app';
+};
+
 const SimpleSocialApp = () => {
   // Stati principali
   const [user, setUser] = useState(null);
@@ -136,10 +142,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🔔 Loading notifications...');
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/notifications`, {
         method: 'GET',
@@ -170,10 +174,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('👥 Loading online users...');
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/online-users`, {
         method: 'GET',
@@ -217,10 +219,8 @@ const SimpleSocialApp = () => {
       setLoading(true);
       console.log('📝 Loading posts...');
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         method: 'GET',
@@ -267,10 +267,8 @@ const SimpleSocialApp = () => {
         timestamp: new Date().toISOString()
       });
       
-    // Determina l'API base dinamicamente
-    const apiBase = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001' 
-      : 'https://web-production-54984.up.railway.app';
+    // Usa la funzione unica per l'API base
+    const apiBase = getApiBase();
       
       console.log('🌐 API Base:', apiBase);
       
@@ -544,10 +542,8 @@ const SimpleSocialApp = () => {
         ? `${generatedTitle}\n\n${generatedDescription}\n\n---\n\n${newPost}`
         : newPost;
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       if (selectedFile) {
         // Post con media - chiamata diretta
@@ -813,10 +809,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('💬 Loading comments for post:', postId);
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: 'GET',
@@ -849,10 +843,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('💬 Adding comment to post:', postId);
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/posts/${postId}/comments`, {
         method: 'POST',
@@ -894,10 +886,8 @@ const SimpleSocialApp = () => {
     try {
       console.log('🗑️ Deleting comment:', commentId);
       
-      // Determina API base dinamicamente
-      const apiBase = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://web-production-54984.up.railway.app';
+      // Usa la funzione unica per l'API base
+      const apiBase = getApiBase();
       
       const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
         method: 'DELETE',

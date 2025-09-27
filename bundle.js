@@ -24409,7 +24409,7 @@ ${shareUrl}`);
         className: "flex-1 bg-gray-600 text-white p-3 rounded-lg font-bold hover:bg-gray-700 transition-colors"
       },
       "\u274C Annulla"
-    )))), /* @__PURE__ */ import_react.default.createElement("div", { className: "mt-4 text-center text-sm text-gray-400" }, /* @__PURE__ */ import_react.default.createElement("p", null, "Credenziali di test:"), /* @__PURE__ */ import_react.default.createElement("p", null, "Email: test2@example.com"), /* @__PURE__ */ import_react.default.createElement("p", null, "Password: password123"))));
+    ))))));
   }
   return /* @__PURE__ */ import_react.default.createElement("div", { className: "min-h-screen bg-black text-white mobile-backend" }, /* @__PURE__ */ import_react.default.createElement("header", { className: "border-b border-gray-800 p-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "max-w-4xl mx-auto flex items-center justify-between mobile-backend" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "text-white font-bold text-sm" }, "C")), /* @__PURE__ */ import_react.default.createElement("h1", { className: "text-xl font-bold text-blue-400" }, "Connect")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center space-x-2" }, user.avatar ? /* @__PURE__ */ import_react.default.createElement(
     "img",

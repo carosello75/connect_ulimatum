@@ -1,13 +1,13 @@
 // Configurazione API per sviluppo e produzione
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || 
-  (window.location.hostname === 'web-production-54984.up.railway.app' 
-    ? 'https://web-production-54984.up.railway.app' 
+  (window.location.hostname === 'web-production-5cc7e.up.railway.app' 
+    ? 'https://web-production-5cc7e.up.railway.app' 
     : 'http://localhost:3001');
 
 // Fallback per mobile se API non riconosciute
 const getApiBase = () => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isRailway = window.location.hostname === 'web-production-54984.up.railway.app';
+  const isRailway = window.location.hostname === 'web-production-5cc7e.up.railway.app';
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
   console.log('API Base Debug:', {
@@ -21,9 +21,9 @@ const getApiBase = () => {
   
   // Forza Railway per mobile se non siamo in localhost
   if (isMobile && !isLocalhost) {
-    return 'https://web-production-54984.up.railway.app';
+    return 'https://web-production-5cc7e.up.railway.app';
   } else if (isRailway) {
-    return 'https://web-production-54984.up.railway.app';
+    return 'https://web-production-5cc7e.up.railway.app';
   } else {
     return 'http://localhost:3001';
   }
