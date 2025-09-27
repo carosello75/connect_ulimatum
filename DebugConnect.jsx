@@ -7,6 +7,10 @@ function DebugConnect() {
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState('');
   const [showComments, setShowComments] = useState({});
@@ -47,6 +51,27 @@ function DebugConnect() {
   // Stati per condivisione
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  
+  // Stati per registrazione
+  const [isRegister, setIsRegister] = useState(false);
+  const [registerData, setRegisterData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  
+  // Stati per gestione utenti
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    role: 'user'
+  });
 
   // Carica utente dal localStorage
   useEffect(() => {
@@ -164,6 +189,184 @@ function DebugConnect() {
     } catch (error) {
       console.error('❌ Errore login:', error);
       alert('Errore nel login: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Carica tutti gli utenti
+  const loadAllUsers = async () => {
+    try {
+      console.log('🔍 Caricamento tutti gli utenti...');
+      const apiBase = 'http://localhost:3001';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${apiBase}/api/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 Risposta utenti:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data.users || []);
+        console.log('✅ Utenti caricati:', data.users?.length || 0);
+      } else {
+        console.error('❌ Errore nel caricamento degli utenti:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Errore nel caricamento degli utenti:', error);
+    }
+  };
+
+  // Crea nuovo utente
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    console.log('🔍 Creazione nuovo utente:', newUserData.email);
+    setLoading(true);
+    
+    try {
+      const apiBase = 'http://localhost:3001';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${apiBase}/api/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newUserData)
+      });
+      
+      console.log('🔍 Risposta creazione utente:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Utente creato:', data.user.name);
+        
+        setNewUserData({
+          name: '',
+          username: '',
+          email: '',
+          password: '',
+          role: 'user'
+        });
+        
+        loadAllUsers(); // Ricarica la lista utenti
+        alert('🎉 Utente creato con successo!');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Errore nella creazione utente:', errorData);
+        alert('Errore: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('❌ Errore nella creazione utente:', error);
+      alert('Errore: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Elimina commento
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('Sei sicuro di voler eliminare questo commento?')) return;
+    
+    try {
+      console.log('🔍 Eliminando commento:', commentId);
+      const apiBase = 'http://localhost:3001';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 Risposta eliminazione commento:', response.status);
+      
+      if (response.ok) {
+        console.log('✅ Commento eliminato con successo');
+        // Ricarica i commenti per questo post
+        const postId = Object.keys(comments).find(id => 
+          comments[id].some(comment => comment.id === commentId)
+        );
+        if (postId) {
+          loadComments(postId);
+        }
+        alert('Commento eliminato con successo!');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Errore nell\'eliminazione del commento:', errorData);
+        alert('Errore: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('❌ Errore nell\'eliminazione del commento:', error);
+      alert('Errore: ' + error.message);
+    }
+  };
+
+  // Registrazione
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    console.log('🔍 Tentativo di registrazione:', registerData.email);
+    setLoading(true);
+    
+    try {
+      // Validazione
+      if (!registerData.name || !registerData.username || !registerData.email || !registerData.password) {
+        alert('❌ Compila tutti i campi obbligatori');
+        setLoading(false);
+        return;
+      }
+      
+      if (registerData.password !== registerData.confirmPassword) {
+        alert('❌ Le password non coincidono');
+        setLoading(false);
+        return;
+      }
+      
+      if (registerData.password.length < 6) {
+        alert('❌ La password deve essere di almeno 6 caratteri');
+        setLoading(false);
+        return;
+      }
+      
+      const apiBase = 'http://localhost:3001';
+      
+      const response = await fetch(`${apiBase}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: registerData.name,
+          username: registerData.username,
+          email: registerData.email,
+          password: registerData.password
+        })
+      });
+      
+      console.log('🔍 Risposta registrazione:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Registrazione riuscita:', data.user.name);
+        
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+        setUser(data.user);
+        setShowLogin(false);
+        loadPosts();
+        alert('🎉 Benvenuto su Connect! La tua registrazione è stata completata con successo!');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Errore registrazione:', errorData);
+        alert('Errore nella registrazione: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('❌ Errore registrazione:', error);
+      alert('Errore nella registrazione: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -445,45 +648,6 @@ function DebugConnect() {
     }
   };
 
-  // Elimina commento
-  const handleDeleteComment = async (commentId) => {
-    if (!confirm('Sei sicuro di voler eliminare questo commento?')) return;
-    
-    try {
-      console.log('🔍 Eliminando commento:', commentId);
-      const apiBase = 'http://localhost:3001';
-      const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`${apiBase}/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('🔍 Risposta eliminazione commento:', response.status);
-      
-      if (response.ok) {
-        console.log('✅ Commento eliminato con successo');
-        // Ricarica i commenti per questo post
-        const postId = Object.keys(comments).find(id => 
-          comments[id].some(comment => comment.id === commentId)
-        );
-        if (postId) {
-          loadComments(postId);
-        }
-        alert('Commento eliminato con successo!');
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Errore nell\'eliminazione del commento:', errorData);
-        alert('Errore: ' + errorData.error);
-      }
-    } catch (error) {
-      console.error('❌ Errore nell\'eliminazione del commento:', error);
-      alert('Errore: ' + error.message);
-    }
-  };
-
   // Condividi post sui social
   const handleSharePost = async (post) => {
     // Su mobile, prova prima Web Share API
@@ -596,6 +760,42 @@ function DebugConnect() {
     setShowLogin(true);
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // In locale, mostra il link direttamente per test
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+          alert(`✅ Token generato! In locale, controlla la console del server per il link di reset.`);
+        } else {
+          alert('✅ Email di reset inviata! Controlla la tua casella di posta.');
+        }
+        setShowForgotPassword(false);
+        setForgotPasswordEmail('');
+      } else {
+        alert(`❌ Errore: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Errore:', error);
+      alert('❌ Errore nella richiesta di reset password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Se non c'è utente, mostra login
   if (!user) {
     return (
@@ -605,36 +805,197 @@ function DebugConnect() {
             <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
               <span className="text-white font-bold text-2xl">C</span>
             </div>
-            <h1 className="text-3xl font-bold text-blue-400">Connect - Debug</h1>
-            <p className="text-gray-400 mt-2">Versione Debug</p>
+            <h1 className="text-3xl font-bold text-blue-400">Connect</h1>
+            <p className="text-gray-400 mt-2">Il tuo social network</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <h2 className="text-xl font-bold text-center mb-6">Accedi</h2>
-            <input
-              type="email"
-              placeholder="Email"
-              value={loginData.email}
-              onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={loginData.password}
-              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 text-white p-3 rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:bg-gray-700"
-            >
-              {loading ? 'Caricamento...' : 'Accedi'}
-            </button>
-          </form>
+          {!isRegister ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <h2 className="text-xl font-bold text-center mb-6">🔐 Accedi</h2>
+              <input
+                type="email"
+                placeholder="📧 Email"
+                value={loginData.email}
+                onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                required
+              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="🔒 Password"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  title={showPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-500 text-white p-3 rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:bg-gray-700"
+              >
+                {loading ? 'Caricamento...' : '🔐 Accedi'}
+              </button>
+              
+              <div className="text-center space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-yellow-400 hover:text-yellow-300 text-sm block w-full"
+                >
+                  🔒 Password dimenticata?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRegister(true)}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Non hai un account? 🚀 Registrati
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <h2 className="text-xl font-bold text-center mb-6">🚀 Registrati</h2>
+              
+              <input
+                type="text"
+                placeholder="👤 Nome Completo"
+                value={registerData.name}
+                onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                required
+              />
+              
+              <input
+                type="text"
+                placeholder="🏷️ Username"
+                value={registerData.username}
+                onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                required
+              />
+              
+              <input
+                type="email"
+                placeholder="📧 Email"
+                value={registerData.email}
+                onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                required
+              />
+              
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="🔒 Password (min. 6 caratteri)"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  title={showPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="🔒 Conferma Password"
+                  value={registerData.confirmPassword}
+                  onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                  className="w-full p-3 pr-12 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  title={showConfirmPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              
+              {registerData.confirmPassword && registerData.password !== registerData.confirmPassword && (
+                <div className="text-red-400 text-sm text-center">
+                  ⚠️ Le password non coincidono
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={loading || !registerData.name || !registerData.username || !registerData.email || !registerData.password || registerData.password !== registerData.confirmPassword}
+                className="w-full bg-green-500 text-white p-3 rounded-lg font-bold hover:bg-green-600 transition-colors disabled:bg-gray-700"
+              >
+                {loading ? 'Caricamento...' : '🚀 Crea Account'}
+              </button>
+              
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsRegister(false)}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Hai già un account? 🔐 Accedi
+                </button>
+              </div>
+            </form>
+          )}
+          
+          {/* Form Password Dimenticata */}
+          {showForgotPassword && (
+            <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="text-lg font-bold text-center mb-4 text-yellow-400">
+                🔒 Password Dimenticata
+              </h3>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <input
+                  type="email"
+                  placeholder="📧 Inserisci la tua email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-yellow-500"
+                  required
+                />
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-yellow-500 text-black p-3 rounded-lg font-bold hover:bg-yellow-600 transition-colors disabled:bg-gray-700"
+                  >
+                    {loading ? 'Invio...' : '📧 Invia Reset'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordEmail('');
+                    }}
+                    className="flex-1 bg-gray-600 text-white p-3 rounded-lg font-bold hover:bg-gray-700 transition-colors"
+                  >
+                    ❌ Annulla
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
           
           <div className="mt-4 text-center text-sm text-gray-400">
             <p>Credenziali di test:</p>
@@ -648,18 +1009,39 @@ function DebugConnect() {
 
   // Interfaccia principale
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white mobile-backend">
       {/* Header */}
       <header className="border-b border-gray-800 p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center justify-between mobile-backend">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">C</span>
             </div>
-            <h1 className="text-xl font-bold text-blue-400">Connect - Debug</h1>
+            <h1 className="text-xl font-bold text-blue-400">Connect</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm">Ciao, {user.name}!</span>
+            <div className="flex items-center space-x-2">
+              {user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.name || 'User'} 
+                  className="w-8 h-8 rounded-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className={`w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center ${user.avatar ? 'hidden' : 'flex'}`}
+                style={{ display: user.avatar ? 'none' : 'flex' }}
+              >
+                <span className="text-white font-bold text-sm">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </span>
+              </div>
+              <span className="text-sm">Ciao, {user.name}!</span>
+            </div>
             
             {/* Notifiche */}
             <button
@@ -683,6 +1065,18 @@ function DebugConnect() {
               className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
             >
               ⭐ Recensioni
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowUserManagement(!showUserManagement);
+                if (!showUserManagement) {
+                  loadAllUsers();
+                }
+              }}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors text-sm"
+            >
+              👥 Utenti
             </button>
             
             <button
@@ -978,13 +1372,29 @@ function DebugConnect() {
             </div>
           ) : (
             posts.map((post) => (
-              <div key={post.id} className="bg-gray-900 p-4 rounded-lg">
+              <div key={post.id} className="bg-gray-900 p-4 rounded-lg mobile-post-container">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold">
-                        {post.name ? post.name.charAt(0).toUpperCase() : 'U'}
-                      </span>
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                      {post.avatar ? (
+                        <img 
+                          src={post.avatar} 
+                          alt={post.name || 'User'} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`w-full h-full bg-blue-500 flex items-center justify-center ${post.avatar ? 'hidden' : 'flex'}`}
+                        style={{ display: post.avatar ? 'none' : 'flex' }}
+                      >
+                        <span className="text-white font-bold">
+                          {post.name ? post.name.charAt(0).toUpperCase() : 'U'}
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <div className="font-bold">{post.name}</div>
@@ -992,16 +1402,14 @@ function DebugConnect() {
                     </div>
                   </div>
                   
-                  {/* Pulsante elimina (solo per i propri post) */}
-                  {post.user_id === user.id && (
-                    <button
-                      onClick={() => handleDeletePost(post.id)}
-                      className="text-red-500 hover:text-red-400 text-sm"
-                      title="Elimina post"
-                    >
-                      🗑️
-                    </button>
-                  )}
+                  {/* Pulsante elimina - sempre visibile */}
+                  <button
+                    onClick={() => handleDeletePost(post.id)}
+                    className="text-red-500 hover:text-red-400 text-sm"
+                    title="Elimina post"
+                  >
+                    🗑️ Elimina
+                  </button>
                 </div>
                 
                 <div className="text-gray-100 mb-3">
@@ -1025,7 +1433,7 @@ function DebugConnect() {
                 )}
                 
                 {/* Azioni */}
-                <div className="flex items-center space-x-4 mb-3">
+                <div className="flex items-center space-x-4 mb-3 mobile-actions">
                   <button 
                     onClick={() => handleLike(post.id)}
                     className={`flex items-center space-x-1 ${
@@ -1284,6 +1692,107 @@ function DebugConnect() {
             </div>
           </div>
         </div>
+        )}
+        
+        {/* Pannello gestione utenti */}
+        {showUserManagement && (
+          <div className="w-80 bg-gray-900 border-r border-gray-800 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">👥 Gestione Utenti</h3>
+              <button
+                onClick={() => setShowUserManagement(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Form creazione nuovo utente */}
+            <div className="bg-gray-800 p-4 rounded-lg mb-4">
+              <h4 className="text-white font-bold mb-3">➕ Crea Nuovo Utente</h4>
+              
+              <form onSubmit={handleCreateUser} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="👤 Nome Completo"
+                  value={newUserData.name}
+                  onChange={(e) => setNewUserData({...newUserData, name: e.target.value})}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+                  required
+                />
+                
+                <input
+                  type="text"
+                  placeholder="🏷️ Username"
+                  value={newUserData.username}
+                  onChange={(e) => setNewUserData({...newUserData, username: e.target.value})}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+                  required
+                />
+                
+                <input
+                  type="email"
+                  placeholder="📧 Email"
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({...newUserData, email: e.target.value})}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+                  required
+                />
+                
+                <input
+                  type="password"
+                  placeholder="🔒 Password"
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData({...newUserData, password: e.target.value})}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+                  required
+                />
+                
+                <select
+                  value={newUserData.role}
+                  onChange={(e) => setNewUserData({...newUserData, role: e.target.value})}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+                >
+                  <option value="user">👤 Utente</option>
+                  <option value="admin">👑 Admin</option>
+                  <option value="moderator">🛡️ Moderatore</option>
+                </select>
+                
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-purple-500 text-white py-2 rounded-lg font-bold hover:bg-purple-600 transition-colors disabled:bg-gray-600 text-sm"
+                >
+                  {loading ? 'Caricamento...' : '➕ Crea Utente'}
+                </button>
+              </form>
+            </div>
+            
+            {/* Lista utenti */}
+            <div className="space-y-2">
+              <h4 className="text-white font-bold">👥 Lista Utenti</h4>
+              {allUsers.length === 0 ? (
+                <div className="text-gray-400 text-center py-4 text-sm">
+                  Nessun utente trovato
+                </div>
+              ) : (
+                allUsers.map((user) => (
+                  <div key={user.id} className="bg-gray-800 p-3 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-white">{user.name}</div>
+                        <div className="text-xs text-gray-400">@{user.username}</div>
+                        <div className="text-xs text-gray-400">{user.email}</div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {user.role === 'admin' ? '👑' : user.role === 'moderator' ? '🛡️' : '👤'}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
       </div>
       
