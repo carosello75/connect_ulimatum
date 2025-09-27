@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Mobile Debug - Social Network</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .debug-section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error { border-left-color: #f44336; }
+        .warning { border-left-color: #ff9800; }
+        .success { border-left-color: #4CAF50; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .result {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Mobile Debug Console</h1>
+    
+    <div class="debug-section">
+        <h3>📱 Informazioni Dispositivo</h3>
+        <div id="device-info"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🔒 HTTPS Check</h3>
+        <div id="https-info"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🌐 Network Test</h3>
+        <button onclick="testNetwork()">Test Connessione</button>
+        <div id="network-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>💾 LocalStorage Test</h3>
+        <button onclick="testLocalStorage()">Test LocalStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🔑 API Test</h3>
+        <button onclick="testAPI()">Test API Railway</button>
+        <div id="api-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>📝 Login Test</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+
+    <script>
+        // Informazioni dispositivo
+        function showDeviceInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Screen': `${screen.width}x${screen.height}`,
+                'Viewport': `${window.innerWidth}x${window.innerHeight}`,
+                'Touch Support': 'ontouchstart' in window,
+                'Mobile': /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            };
+            
+            document.getElementById('device-info').innerHTML = 
+                Object.entries(info).map(([key, value]) => 
+                    `<strong>${key}:</strong> ${value}`
+                ).join('<br>');
+        }
+        
+        // HTTPS Check
+        function showHTTPSInfo() {
+            const httpsInfo = {
+                'Protocol': window.location.protocol,
+                'Host': window.location.host,
+                'Is HTTPS': window.location.protocol === 'https:',
+                'Secure Context': window.isSecureContext
+            };
+            
+            document.getElementById('https-info').innerHTML = 
+                Object.entries(httpsInfo).map(([key, value]) => 
+                    `<strong>${key}:</strong> <span style="color: ${value ? '#4CAF50' : '#f44336'}">${value}</span>`
+                ).join('<br>');
+        }
+        
+        // Test Network
+        async function testNetwork() {
+            const result = document.getElementById('network-result');
+            result.innerHTML = '🔄 Testing...';
+            
+            try {
+                const response = await fetch('https://web-production-5cc7e.up.railway.app/api/health');
+                const data = await response.json();
+                result.innerHTML = `<div class="result success">✅ Connessione OK<br>${JSON.stringify(data, null, 2)}</div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ Errore: ${error.message}</div>`;
+            }
+        }
+        
+        // Test LocalStorage
+        function testLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            
+            try {
+                localStorage.setItem('test', 'mobile-debug');
+                const value = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (value === 'mobile-debug') {
+                    result.innerHTML = '<div class="result success">✅ LocalStorage funziona</div>';
+                } else {
+                    result.innerHTML = '<div class="result error">❌ LocalStorage non funziona</div>';
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ LocalStorage bloccato: ${error.message}</div>`;
+            }
+        }
+        
+        // Test API
+        async function testAPI() {
+            const result = document.getElementById('api-result');
+            result.innerHTML = '🔄 Testing API...';
+            
+            try {
+                const response = await fetch('https://web-production-5cc7e.up.railway.app/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `<div class="result success">✅ API OK<br>${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    result.innerHTML = `<div class="result error">❌ API Error: ${response.status}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ API Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Test Login
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.innerHTML = '🔄 Testing Login...';
+            
+            try {
+                const response = await fetch('https://web-production-5cc7e.up.railway.app/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'test123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<div class="result success">✅ Login API OK<br>${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    result.innerHTML = `<div class="result warning">⚠️ Login API Response: ${response.status}<br>${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ Login Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Inizializza
+        document.addEventListener('DOMContentLoaded', function() {
+            showDeviceInfo();
+            showHTTPSInfo();
+        });
+    </script>
+</body>
+</html>

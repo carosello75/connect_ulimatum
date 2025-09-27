@@ -34,6 +34,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Fix per mobile - Forza HTTPS
+app.use((req, res, next) => {
+  if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
+    res.redirect(`https://${req.header('host')}${req.url}`);
+  } else {
+    next();
+  }
+});
+
 // Middleware
 app.use(cors({
   origin: ['http://localhost:3001', 'https://web-production-5cc7e.up.railway.app', 'https://*.up.railway.app', 'https://*.railway.app'],
