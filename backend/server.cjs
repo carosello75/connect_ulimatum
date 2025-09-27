@@ -23,6 +23,12 @@ const io = socketIo(server, {
 
 // Configurazione
 const PORT = process.env.PORT || 3001;
+
+// Debug per Railway
+console.log('🔍 Railway Debug:');
+console.log('PORT:', PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // Configurazione email
@@ -1098,6 +1104,7 @@ app.use((error, req, res, next) => {
 
 // Route di test
 app.get('/api/health', (req, res) => {
+  console.log('🏥 Health check requested');
   try {
     res.status(200).json({ 
       status: 'OK', 
@@ -1113,6 +1120,16 @@ app.get('/api/health', (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Root endpoint per Railway
+app.get('/', (req, res) => {
+  console.log('🏠 Root endpoint requested');
+  res.json({
+    status: 'OK',
+    message: 'Social Network API is running!',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Endpoint per pulire utenti duplicati (solo per sviluppo)
