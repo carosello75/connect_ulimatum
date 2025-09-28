@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Ultra Semplice</title>
+</head>
+<body style="background: red; color: white; font-size: 50px; text-align: center; padding: 100px;">
+    <h1>🔴 TEST FUNZIONA!</h1>
+    <p>Se vedi questo, il server funziona!</p>
+    <p>Ora: <span id="time"></span></p>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString();
+        setInterval(function() {
+            document.getElementById('time').textContent = new Date().toLocaleString();
+        }, 1000);
+    </script>
+</body>
+</html>

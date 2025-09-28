@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Social Network</title>
+    <style>
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .post {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+        }
+        .form {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #444;
+            color: #fff;
+        }
+        button {
+            background: #1d9bf0;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1a8cd8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Simple Social Network</h1>
+            <p>Versione semplificata per test</p>
+        </div>
+        
+        <div class="form">
+            <h3>📝 Nuovo Post</h3>
+            <textarea id="postText" placeholder="Cosa stai pensando?"></textarea>
+            <button onclick="addPost()">Pubblica</button>
+        </div>
+        
+        <div id="posts">
+            <div class="post">
+                <h4>👤 Admin</h4>
+                <p>Benvenuto nel Simple Social Network!</p>
+                <small>Ora: <span id="time"></span></small>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Aggiorna ora
+        function updateTime() {
+            document.getElementById('time').textContent = new Date().toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Aggiungi post
+        function addPost() {
+            const text = document.getElementById('postText').value;
+            if (text.trim()) {
+                const postsDiv = document.getElementById('posts');
+                const postDiv = document.createElement('div');
+                postDiv.className = 'post';
+                postDiv.innerHTML = `
+                    <h4>👤 Tu</h4>
+                    <p>${text}</p>
+                    <small>Ora: ${new Date().toLocaleString()}</small>
+                `;
+                postsDiv.insertBefore(postDiv, postsDiv.firstChild);
+                document.getElementById('postText').value = '';
+            }
+        }
+        
+        // Test API
+        async function testAPI() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                console.log('✅ API OK:', data.message);
+            } catch (error) {
+                console.error('❌ API Error:', error);
+            }
+        }
+        
+        // Test al caricamento
+        window.addEventListener('load', function() {
+            console.log('🔍 Simple Social Network loaded');
+            testAPI();
+        });
+    </script>
+</body>
+</html>

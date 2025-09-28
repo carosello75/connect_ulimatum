@@ -51,10 +51,25 @@ app.use((req, res, next) => {
 
 // Fix CORS per mobile
 app.use(cors({
-  origin: true,
+  origin: [
+    'http://localhost:3001',
+    'http://localhost:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3000',
+    'https://web-production-5cc7e.up.railway.app',
+    'https://web-production-62e5c.up.railway.app',
+    'https://web-production-54984.up.railway.app',
+    /^https:\/\/.*\.ngrok\.io$/,
+    /^https:\/\/.*\.ngrok-free\.app$/,
+    /^https:\/\/.*\.vercel\.app$/,
+    /^https:\/\/.*\.railway\.app$/
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
 // Force HTTPS e fix headers mobile
@@ -63,6 +78,22 @@ app.use((req, res, next) => {
     return res.redirect(`https://${req.header('host')}${req.url}`);
   }
   res.header('Access-Control-Allow-Credentials', true);
+  next();
+});
+
+// Mobile-specific headers
+app.use((req, res, next) => {
+  // Set mobile-friendly headers
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  // Mobile viewport fix
+  if (req.path === '/' || req.path === '/index.html') {
+    res.header('Content-Type', 'text/html; charset=utf-8');
+  }
+  
   next();
 });
 app.use(express.json({ limit: '50mb' }));
@@ -1134,11 +1165,7 @@ app.get('/api/health', (req, res) => {
 // Root endpoint per Railway
 app.get('/', (req, res) => {
   console.log('🏠 Root endpoint requested');
-  res.json({
-    status: 'OK',
-    message: 'Social Network API is running!',
-    timestamp: new Date().toISOString()
-  });
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // Endpoint per pulire utenti duplicati (solo per sviluppo)

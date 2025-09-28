@@ -120,6 +120,9 @@ async function request(path, { method = 'GET', body, auth = false, isFormData = 
   }
 }
 
+// Esporta getApiBase per uso globale
+export { getApiBase };
+
 export const api = {
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
   register: (username, email, password, name) => request('/api/auth/register', { method: 'POST', body: { username, email, password, name } }),

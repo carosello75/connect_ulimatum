@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test React</title>
+</head>
+<body>
+    <div id="root">Loading...</div>
+    
+    <script>
+        console.log('🔍 Test HTML caricato');
+        
+        // Test se il DOM è pronto
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM pronto');
+            const root = document.getElementById('root');
+            if (root) {
+                console.log('✅ Elemento root trovato');
+                root.innerHTML = '<h1 style="color: white; background: black; padding: 20px;">TEST FUNZIONA!</h1>';
+            } else {
+                console.error('❌ Elemento root non trovato');
+            }
+        });
+        
+        // Test se il bundle si carica
+        console.log('🔍 Caricamento bundle...');
+    </script>
+    
+    <script src="/bundle.js"></script>
+    
+    <script>
+        console.log('🔍 Bundle caricato');
+    </script>
+</body>
+</html>
