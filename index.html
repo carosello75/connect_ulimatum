@@ -2310,7 +2310,7 @@
             </div>
             
             <div class="who-to-follow">
-                <h3>Chi seguire</h3>
+                <h3>Chi seguire <button onclick="loadRealUsers()" style="background: #1a8cd8; color: white; border: none; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px;">🔄</button></h3>
                 <div id="realUsersList">
                     <!-- Solo utenti reali verranno mostrati qui -->
                 </div>
@@ -3960,6 +3960,8 @@
             // Load user-specific posts for home section
             if (sectionName === 'home') {
                 loadUserPosts();
+                // Also reload users when going to home
+                loadRealUsers();
             }
             
             // Load notifications for notifications section
@@ -3972,6 +3974,8 @@
             if (sectionName === 'messages') {
                 console.log('💬 Loading messages section');
                 loadMessages();
+                // Also reload users when going to messages
+                loadRealUsers();
             }
             
             // Load all posts for explore section
@@ -4410,6 +4414,12 @@
             
             // Load real users when app starts
             loadRealUsers();
+            
+            // Reload users every 30 seconds to catch new registrations
+            setInterval(() => {
+                console.log('🔄 Auto-reloading users...');
+                loadRealUsers();
+            }, 30000);
         }
 
         // Show login form
