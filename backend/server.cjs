@@ -461,6 +461,8 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
+  
+  console.log('🔐 Login attempt:', { email, password: '***' });
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email e password sono richieste' });
@@ -474,11 +476,21 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(500).json({ error: 'Errore del server' });
       }
 
-      if (!user || !await bcrypt.compare(password, user.password)) {
+      if (!user) {
+        console.log('🔐 User not found:', email);
+        return res.status(401).json({ error: 'Credenziali non valide' });
+      }
+      
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      console.log('🔐 Password match:', passwordMatch);
+      
+      if (!passwordMatch) {
+        console.log('🔐 Invalid password for user:', email);
         return res.status(401).json({ error: 'Credenziali non valide' });
       }
 
       const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
+      console.log('🔐 Login successful for user:', email);
       res.json({
         message: 'Login effettuato',
         token,
@@ -1757,6 +1769,44 @@ app.post('/api/messages', (req, res) => {
       });
     }
   );
+});
+
+// Endpoint per resettare password (per debug)
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, newPassword } = req.body;
+  console.log('🔐 Password reset request for:', email);
+  
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'Email e nuova password richieste' });
+  }
+  
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    db.run(
+      'UPDATE users SET password = ? WHERE email = ?',
+      [hashedPassword, email],
+      function(err) {
+        if (err) {
+          console.error('Error resetting password:', err);
+          return res.status(500).json({ error: 'Errore nel reset della password' });
+        }
+        
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Utente non trovato' });
+        }
+        
+        console.log('🔐 Password reset successful for:', email);
+        res.json({ 
+          success: true, 
+          message: 'Password resettata con successo' 
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Error hashing password:', error);
+    res.status(500).json({ error: 'Errore del server' });
+  }
 });
 
 // Cambia password
