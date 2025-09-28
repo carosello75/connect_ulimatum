@@ -1689,6 +1689,73 @@ app.get('/api/users/profile/:username', (req, res) => {
   );
 });
 
+// Endpoint per ottenere tutti gli utenti
+app.get('/api/users', (req, res) => {
+  console.log('👥 Loading all users...');
+  
+  db.all(
+    'SELECT id, username, name, email, bio, avatar, avatarType, created_at FROM users ORDER BY created_at DESC',
+    [],
+    (err, users) => {
+      if (err) {
+        console.error('Error loading users:', err);
+        return res.status(500).json({ error: 'Errore nel caricamento degli utenti' });
+      }
+      
+      console.log(`👥 Found ${users.length} users`);
+      res.json(users || []);
+    }
+  );
+});
+
+// Endpoint per ottenere i messaggi di un utente
+app.get('/api/messages/:userId', (req, res) => {
+  const { userId } = req.params;
+  console.log('💬 Loading messages for user:', userId);
+  
+  db.all(
+    'SELECT * FROM messages WHERE recipient_id = ? OR sender_id = ? ORDER BY created_at DESC',
+    [userId, userId],
+    (err, messages) => {
+      if (err) {
+        console.error('Error loading messages:', err);
+        return res.status(500).json({ error: 'Errore nel caricamento dei messaggi' });
+      }
+      
+      console.log(`💬 Found ${messages.length} messages`);
+      res.json(messages || []);
+    }
+  );
+});
+
+// Endpoint per inviare un messaggio
+app.post('/api/messages', (req, res) => {
+  const { sender_id, recipient_id, content } = req.body;
+  console.log('💬 Sending message from:', sender_id, 'to:', recipient_id);
+  
+  if (!sender_id || !recipient_id || !content) {
+    return res.status(400).json({ error: 'Dati mancanti per inviare il messaggio' });
+  }
+  
+  db.run(
+    'INSERT INTO messages (sender_id, recipient_id, content, created_at) VALUES (?, ?, ?, ?)',
+    [sender_id, recipient_id, content, new Date().toISOString()],
+    function(err) {
+      if (err) {
+        console.error('Error sending message:', err);
+        return res.status(500).json({ error: 'Errore nell\'invio del messaggio' });
+      }
+      
+      console.log('💬 Message sent successfully');
+      res.json({ 
+        success: true, 
+        message: 'Messaggio inviato con successo',
+        messageId: this.lastID 
+      });
+    }
+  );
+});
+
 // Cambia password
 app.post('/api/auth/change-password', authenticateToken, (req, res) => {
   const { currentPassword, newPassword } = req.body;
