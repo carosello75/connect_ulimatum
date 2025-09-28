@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "npm run build && node backend/server.cjs",
+    "start": "node backend/server.cjs",
     "start:prod": "npm run build && npm run api",
     "build": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js",
     "build:watch": "esbuild main.jsx --bundle --format=esm --outfile=bundle.js --watch",

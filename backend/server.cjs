@@ -22,7 +22,7 @@ const io = socketIo(server, {
 });
 
 // Configurazione
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Debug per Railway
 console.log('🔍 Railway Debug:');
