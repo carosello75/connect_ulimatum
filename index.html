@@ -1549,6 +1549,65 @@
                 width: 20px;
             }
             
+            .mobile-users-section {
+                border-top: 1px solid #2f3336;
+                margin-top: 10px;
+            }
+            
+            .mobile-user-item {
+                display: flex;
+                align-items: center;
+                padding: 10px 20px;
+                border-bottom: 1px solid #2f3336;
+                color: #fff;
+            }
+            
+            .mobile-user-avatar {
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                background: #1a8cd8;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 10px;
+                font-size: 14px;
+            }
+            
+            .mobile-user-info {
+                flex: 1;
+            }
+            
+            .mobile-user-name {
+                font-weight: 600;
+                font-size: 14px;
+                margin-bottom: 2px;
+            }
+            
+            .mobile-user-username {
+                color: #71767b;
+                font-size: 12px;
+            }
+            
+            .mobile-user-actions {
+                display: flex;
+                gap: 5px;
+            }
+            
+            .mobile-follow-btn, .mobile-message-btn {
+                background: #1a8cd8;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 15px;
+                cursor: pointer;
+                font-size: 11px;
+            }
+            
+            .mobile-message-btn {
+                background: #17bf63;
+            }
+            
             /* Mobile Menu Overlay - Hidden by default */
             .mobile-menu-overlay {
                 display: none !important;
@@ -1875,6 +1934,19 @@
                     <i class="fas fa-ellipsis-h"></i>
                     Altro
                 </a>
+                
+                <!-- Utenti Online per Mobile -->
+                <div class="mobile-users-section">
+                    <h3 style="color: #fff; padding: 15px 20px; margin: 0; border-bottom: 1px solid #2f3336; font-size: 16px;">
+                        👥 Utenti Online
+                    </h3>
+                    <div id="mobileUsersList" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Utenti online verranno mostrati qui -->
+                    </div>
+                    <div class="mobile-no-users-message" style="color: #71767b; text-align: center; padding: 20px; display: none;">
+                        <p>Nessun utente online al momento</p>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -3496,6 +3568,9 @@
             const realUsersList = document.getElementById('realUsersList');
             const noUsersMessage = document.querySelector('.no-users-message');
             
+            // Also load mobile users
+            loadMobileUsers();
+            
             if (realUsersList) {
                 try {
                     // Try to load users from backend
@@ -3554,8 +3629,70 @@
             showNotification('Funzione follow in sviluppo!', 'info');
         }
         
+        // Load mobile users function
+        async function loadMobileUsers() {
+            console.log('📱 Loading mobile users...');
+            const mobileUsersList = document.getElementById('mobileUsersList');
+            const mobileNoUsersMessage = document.querySelector('.mobile-no-users-message');
+            
+            if (mobileUsersList) {
+                try {
+                    // Try to load users from backend
+                    const response = await fetch('/api/users');
+                    if (response.ok) {
+                        const users = await response.json();
+                        console.log('📱 Mobile users from backend:', users);
+                        console.log('📱 Current user ID:', currentUser.id);
+                        console.log('📱 Current user email:', currentUser.email);
+                        
+                        // Filter out current user by ID and email
+                        const realUsers = users.filter(user => {
+                            const isNotCurrentUser = user.id !== currentUser.id;
+                            const isNotCurrentEmail = user.email !== currentUser.email;
+                            console.log(`📱 Mobile User ${user.username}: ID match=${user.id === currentUser.id}, Email match=${user.email === currentUser.email}`);
+                            return isNotCurrentUser && isNotCurrentEmail;
+                        });
+                        console.log('📱 Mobile real users (filtered):', realUsers);
+                        
+                        if (realUsers.length > 0) {
+                            mobileNoUsersMessage.style.display = 'none';
+                            mobileUsersList.innerHTML = realUsers.map(user => `
+                                <div class="mobile-user-item">
+                                    <div class="mobile-user-avatar">
+                                        ${user.avatar && user.avatarType === 'image' ? 
+                                            `<img src="${user.avatar}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">` :
+                                            `<i class="${user.avatar || 'fas fa-user'}"></i>`
+                                        }
+                                    </div>
+                                    <div class="mobile-user-info">
+                                        <div class="mobile-user-name">${user.name || user.username || 'Utente'}</div>
+                                        <div class="mobile-user-username">@${user.username || 'user'}</div>
+                                    </div>
+                                    <div class="mobile-user-actions">
+                                        <button class="mobile-follow-btn" onclick="followUser('${user.id}')">Segui</button>
+                                        <button class="mobile-message-btn" onclick="openChat('${user.id}')">💬</button>
+                                    </div>
+                                </div>
+                            `).join('');
+                        } else {
+                            mobileNoUsersMessage.style.display = 'block';
+                            mobileUsersList.innerHTML = '';
+                        }
+                    } else {
+                        mobileNoUsersMessage.style.display = 'block';
+                        mobileUsersList.innerHTML = '';
+                    }
+                } catch (error) {
+                    console.log('📱 Error loading mobile users:', error);
+                    mobileNoUsersMessage.style.display = 'block';
+                    mobileUsersList.innerHTML = '';
+                }
+            }
+        }
+        
         // Make functions global
         window.loadRealUsers = loadRealUsers;
+        window.loadMobileUsers = loadMobileUsers;
         window.followUser = followUser;
         
         // Messages system
