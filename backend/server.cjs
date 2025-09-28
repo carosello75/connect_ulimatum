@@ -1162,6 +1162,16 @@ app.get('/api/health', (req, res) => {
   }
 });
 
+// Healthcheck semplice per Railway
+app.get('/health', (req, res) => {
+  console.log('🏥 Simple health check requested');
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Test endpoint semplice
 app.get('/test', (req, res) => {
   console.log('🧪 Test endpoint requested');
