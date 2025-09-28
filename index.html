@@ -37,6 +37,7 @@
             top: 0;
             height: 100vh;
             overflow-y: auto;
+            min-width: 280px;
         }
         
         .logo {
@@ -137,6 +138,11 @@
         .main-content {
             background: #000;
             border-right: 1px solid #2f3336;
+            padding: 20px;
+            overflow-y: auto;
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
         }
         
         .header {
@@ -1042,6 +1048,7 @@
             top: 0;
             height: 100vh;
             overflow-y: auto;
+            min-width: 350px;
         }
         
         .search-box {
@@ -1309,6 +1316,32 @@
             background: #1a1a1a;
         }
         
+        /* Desktop Layout - Default */
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            gap: 0;
+            min-height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Force desktop layout on large screens */
+        @media (min-width: 769px) {
+            .mobile-header,
+            .mobile-menu,
+            .mobile-menu-overlay,
+            .mobile-post-btn {
+                display: none !important;
+            }
+            
+            .container {
+                display: grid !important;
+                grid-template-columns: 280px 1fr 350px !important;
+            }
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .container {
@@ -1321,6 +1354,52 @@
             
             .sidebar-left .post-btn {
                 display: none;
+            }
+        }
+        
+        /* Tablet specific styles */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .mobile-header {
+                display: none;
+            }
+            
+            .mobile-menu {
+                display: none;
+            }
+            
+            .mobile-post-btn {
+                display: none;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .post {
+                margin-bottom: 20px;
+                padding: 20px;
+            }
+            
+            .post-header {
+                gap: 15px;
+            }
+            
+            .post-avatar {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .post-content {
+                font-size: 16px;
+                line-height: 1.5;
+            }
+            
+            .post-actions {
+                gap: 20px;
+            }
+            
+            .post-action {
+                padding: 8px 12px;
             }
         }
         
@@ -1340,6 +1419,194 @@
                 padding: 10px;
                 width: 100%;
                 max-width: 100%;
+            }
+            
+            /* Mobile Header - Hidden by default */
+            .mobile-header {
+                display: none !important;
+            }
+            
+            /* Show mobile header only on mobile */
+            @media (max-width: 768px) {
+                .mobile-header {
+                    display: flex !important;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px 20px;
+                    background: #000;
+                    border-bottom: 1px solid #2f3336;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1000;
+                }
+            }
+            
+            .mobile-logo {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #fff;
+                font-weight: bold;
+                font-size: 18px;
+            }
+            
+            .mobile-logo-icon {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(45deg, #ff0080, #ff8c00);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-weight: bold;
+                font-size: 18px;
+            }
+            
+            .mobile-menu-btn {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 8px;
+                transition: background 0.3s;
+            }
+            
+            .mobile-menu-btn:hover {
+                background: #2f3336;
+            }
+            
+            /* Mobile Menu - Hidden by default */
+            .mobile-menu {
+                display: none !important;
+            }
+            
+            /* Show mobile menu only on mobile */
+            @media (max-width: 768px) {
+                .mobile-menu {
+                    display: block !important;
+                    position: fixed;
+                    top: 0;
+                    left: -100%;
+                    width: 280px;
+                    height: 100vh;
+                    background: #000;
+                    border-right: 1px solid #2f3336;
+                    z-index: 1001;
+                    transition: left 0.3s ease;
+                    overflow-y: auto;
+                }
+            }
+            
+            .mobile-menu.active {
+                left: 0;
+            }
+            
+            .mobile-menu-header {
+                padding: 20px;
+                border-bottom: 1px solid #2f3336;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .mobile-menu-close {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 8px;
+                transition: background 0.3s;
+            }
+            
+            .mobile-menu-close:hover {
+                background: #2f3336;
+            }
+            
+            .mobile-menu-content {
+                padding: 20px 0;
+            }
+            
+            .mobile-nav-item {
+                display: block;
+                padding: 15px 20px;
+                color: #fff;
+                text-decoration: none;
+                border-bottom: 1px solid #2f3336;
+                transition: background 0.3s;
+            }
+            
+            .mobile-nav-item:hover {
+                background: #2f3336;
+            }
+            
+            .mobile-nav-item i {
+                margin-right: 15px;
+                width: 20px;
+            }
+            
+            /* Mobile Menu Overlay - Hidden by default */
+            .mobile-menu-overlay {
+                display: none !important;
+            }
+            
+            /* Show mobile menu overlay only on mobile */
+            @media (max-width: 768px) {
+                .mobile-menu-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 1000;
+                    display: none;
+                }
+            }
+            
+            .mobile-menu-overlay.active {
+                display: block;
+            }
+            
+            /* Mobile Post Button - Hidden by default */
+            .mobile-post-btn {
+                display: none !important;
+            }
+            
+            /* Show mobile post button only on mobile */
+            @media (max-width: 768px) {
+                .mobile-post-btn {
+                    display: block !important;
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    width: 56px;
+                    height: 56px;
+                    background: linear-gradient(45deg, #ff0080, #ff8c00);
+                    border: none;
+                    border-radius: 50%;
+                    color: #fff;
+                    font-size: 24px;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(255, 0, 128, 0.3);
+                    transition: transform 0.3s, box-shadow 0.3s;
+                    z-index: 999;
+                }
+            }
+            
+            .mobile-post-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 16px rgba(255, 0, 128, 0.4);
+            }
+            
+            /* Mobile Content */
+            .mobile-content {
+                padding-top: 80px;
+                padding-bottom: 100px;
             }
             
             .post {
@@ -1553,6 +1820,72 @@
     </div>
 
     <div class="container" id="mainApp" style="display: none;">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <div class="mobile-logo">
+                <div class="mobile-logo-icon">C</div>
+                <span>CONNECT</span>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-header">
+                <div class="mobile-logo">
+                    <div class="mobile-logo-icon">C</div>
+                    <span>CONNECT</span>
+                </div>
+                <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mobile-menu-content">
+                <a href="#" class="mobile-nav-item" onclick="showSection('home'); toggleMobileMenu();">
+                    <i class="fas fa-home"></i>
+                    Home
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('explore'); toggleMobileMenu();">
+                    <i class="fas fa-hashtag"></i>
+                    Esplora
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('notifications'); toggleMobileMenu();">
+                    <i class="fas fa-bell"></i>
+                    Notifiche
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('messages'); toggleMobileMenu();">
+                    <i class="fas fa-envelope"></i>
+                    Messaggi
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('bookmarks'); toggleMobileMenu();">
+                    <i class="fas fa-bookmark"></i>
+                    Segnalibri
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('lists'); toggleMobileMenu();">
+                    <i class="fas fa-list"></i>
+                    Liste
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('profile'); toggleMobileMenu();">
+                    <i class="fas fa-user"></i>
+                    Profilo
+                </a>
+                <a href="#" class="mobile-nav-item" onclick="showSection('more'); toggleMobileMenu();">
+                    <i class="fas fa-ellipsis-h"></i>
+                    Altro
+                </a>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu Overlay -->
+        <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()"></div>
+        
+        <!-- Mobile Post Button -->
+        <button class="mobile-post-btn" onclick="showPostModal()">
+            <i class="fas fa-plus"></i>
+        </button>
+        
         <!-- Sidebar Left -->
         <div class="sidebar-left">
             <div class="logo">
@@ -3312,6 +3645,37 @@
         window.loadMessages = loadMessages;
         window.openChat = openChat;
         window.sendMessage = sendMessage;
+        
+        // Mobile menu functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            
+            if (mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                mobileMenuOverlay.classList.remove('active');
+            } else {
+                mobileMenu.classList.add('active');
+                mobileMenuOverlay.classList.add('active');
+            }
+        }
+        
+        // Show post modal function
+        function showPostModal() {
+            // Show the post creation area
+            const postArea = document.querySelector('.post-area');
+            if (postArea) {
+                postArea.scrollIntoView({ behavior: 'smooth' });
+                const postText = document.getElementById('postText');
+                if (postText) {
+                    postText.focus();
+                }
+            }
+        }
+        
+        // Make mobile functions global
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.showPostModal = showPostModal;
         
         // Update notification badge
         function updateNotificationBadge() {
