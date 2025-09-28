@@ -1811,6 +1811,12 @@
                         <i class="fas fa-sign-in-alt"></i>
                         Accedi
                     </button>
+                    
+                    <!-- Test Connection Button for Mobile -->
+                    <button type="button" onclick="testConnection()" class="auth-btn secondary" style="margin-top: 10px; background: #17bf63;">
+                        <i class="fas fa-wifi"></i>
+                        Test Connessione
+                    </button>
                 </form>
                 <div class="auth-switch">
                     <p>Non hai un account? <a href="#" onclick="showRegister(); return false;">Registrati</a></p>
@@ -4608,6 +4614,7 @@
             console.log('Login attempt:', { email, password: '***', rememberMe });
             
             try {
+                console.log('📱 Mobile login attempt:', { email, password: '***' });
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -4616,7 +4623,11 @@
                     body: JSON.stringify({ email, password })
                 });
                 
+                console.log('📱 Mobile login response status:', response.status);
+                console.log('📱 Mobile login response ok:', response.ok);
+                
                 const data = await response.json();
+                console.log('📱 Mobile login response data:', data);
                 
                 if (data.token && data.user) {
                     // Use real user data from backend
@@ -4644,7 +4655,8 @@
                     showNotification('Errore: ' + data.message);
                 }
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('📱 Mobile login error:', error);
+                console.log('📱 Mobile login fallback activated');
                 // Fallback for demo purposes
                 currentUser = {
                     id: btoa(email).replace(/[^a-zA-Z0-9]/g, ''),
@@ -4847,6 +4859,22 @@
             console.log('handleRegister:', typeof handleRegister);
         };
 
+        // Test connection function for mobile
+        window.testConnection = async function() {
+            console.log('📱 Testing mobile connection...');
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                console.log('📱 Mobile connection test:', data);
+                showNotification('Connessione OK: ' + data.message);
+                return true;
+            } catch (error) {
+                console.error('📱 Mobile connection test failed:', error);
+                showNotification('Errore connessione: ' + error.message);
+                return false;
+            }
+        };
+        
         // Make functions globally accessible
         window.showLogin = showLogin;
         window.showRegister = showRegister;
