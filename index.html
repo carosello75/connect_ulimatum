@@ -3503,7 +3503,15 @@
                     if (response.ok) {
                         const users = await response.json();
                         console.log('👥 Users from backend:', users);
-                        const realUsers = users.filter(user => user.id !== currentUser.id);
+                        console.log('👥 Current user ID:', currentUser.id);
+                        console.log('👥 Current user email:', currentUser.email);
+                        // Filter out current user by ID and email
+                        const realUsers = users.filter(user => {
+                            const isNotCurrentUser = user.id !== currentUser.id;
+                            const isNotCurrentEmail = user.email !== currentUser.email;
+                            console.log(`👥 User ${user.username}: ID match=${user.id === currentUser.id}, Email match=${user.email === currentUser.email}`);
+                            return isNotCurrentUser && isNotCurrentEmail;
+                        });
                         console.log('👥 Real users (filtered):', realUsers);
                         
                         if (realUsers.length > 0) {
