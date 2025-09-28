@@ -2514,6 +2514,42 @@
             renderPosts();
         }
         
+        // Load all posts for home feed (from all users)
+        async function loadAllPostsForHome() {
+            console.log('🏠 Loading all posts for home feed...');
+            try {
+                // Try to load all posts from database
+                const response = await fetch('/api/posts');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.posts && data.posts.length > 0) {
+                        posts = data.posts;
+                        console.log('🏠 Loaded', posts.length, 'posts from database');
+                        renderPosts();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log('🏠 Database load failed, trying localStorage:', error);
+            }
+            
+            // Fallback: aggregate posts from all users in localStorage
+            const allPosts = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('connectPosts_')) {
+                    const userPosts = JSON.parse(localStorage.getItem(key) || '[]');
+                    allPosts.push(...userPosts);
+                }
+            }
+            
+            // Sort by timestamp
+            allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            posts = allPosts;
+            console.log('🏠 Loaded', posts.length, 'posts from localStorage');
+            renderPosts();
+        }
+        
         // Load user-specific posts (for profile section)
         async function loadUserPosts() {
             if (currentUser && currentUser.id) {
@@ -3699,6 +3735,7 @@
         // Make functions global
         window.loadRealUsers = loadRealUsers;
         window.loadMobileUsers = loadMobileUsers;
+        window.loadAllPostsForHome = loadAllPostsForHome;
         window.followUser = followUser;
         
         // Messages system
@@ -4110,9 +4147,9 @@
                 loadUserProfileData();
             }
             
-            // Load user-specific posts for home section
+            // Load all posts for home section (not just user-specific)
             if (sectionName === 'home') {
-                loadUserPosts();
+                loadAllPostsForHome();
                 // Also reload users when going to home
                 loadRealUsers();
             }

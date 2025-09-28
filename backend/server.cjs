@@ -1723,6 +1723,25 @@ app.get('/api/users', (req, res) => {
   );
 });
 
+// Endpoint per ottenere tutti i post (per home feed)
+app.get('/api/posts', (req, res) => {
+  console.log('📝 Loading all posts...');
+  
+  db.all(
+    'SELECT * FROM posts ORDER BY created_at DESC',
+    [],
+    (err, posts) => {
+      if (err) {
+        console.error('Error loading posts:', err);
+        return res.status(500).json({ error: 'Errore nel caricamento dei post' });
+      }
+      
+      console.log(`📝 Found ${posts.length} posts`);
+      res.json({ posts: posts || [] });
+    }
+  );
+});
+
 // Endpoint per ottenere i messaggi di un utente
 app.get('/api/messages/:userId', (req, res) => {
   const { userId } = req.params;
