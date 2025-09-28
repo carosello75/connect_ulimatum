@@ -1162,10 +1162,50 @@ app.get('/api/health', (req, res) => {
   }
 });
 
+// Test endpoint semplice
+app.get('/test', (req, res) => {
+  console.log('🧪 Test endpoint requested');
+  res.json({ 
+    status: 'OK', 
+    message: 'Test endpoint working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Debug endpoint
+app.get('/debug', (req, res) => {
+  console.log('🐛 Debug endpoint requested');
+  res.json({
+    status: 'OK',
+    message: 'Debug endpoint working!',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    port: PORT,
+    nodeEnv: process.env.NODE_ENV,
+    railwayEnv: process.env.RAILWAY_ENVIRONMENT
+  });
+});
+
 // Root endpoint per Railway
 app.get('/', (req, res) => {
   console.log('🏠 Root endpoint requested');
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  try {
+    res.sendFile(path.join(__dirname, '..', 'index.html'));
+  } catch (error) {
+    console.error('Error serving index.html:', error);
+    res.status(500).json({ error: 'Error serving index.html' });
+  }
+});
+
+// Fallback endpoint per Railway
+app.get('*', (req, res) => {
+  console.log('🔄 Fallback endpoint requested:', req.path);
+  res.json({
+    status: 'OK',
+    message: 'Social Network API is running!',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Endpoint per pulire utenti duplicati (solo per sviluppo)
