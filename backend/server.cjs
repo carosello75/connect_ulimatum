@@ -1728,7 +1728,10 @@ app.get('/api/posts', (req, res) => {
   console.log('📝 Loading all posts...');
   
   db.all(
-    'SELECT * FROM posts ORDER BY created_at DESC',
+    `SELECT p.*, u.username, u.name, u.email, u.avatar, u.avatarType 
+     FROM posts p 
+     LEFT JOIN users u ON p.user_id = u.id 
+     ORDER BY p.created_at DESC`,
     [],
     (err, posts) => {
       if (err) {
@@ -1736,7 +1739,7 @@ app.get('/api/posts', (req, res) => {
         return res.status(500).json({ error: 'Errore nel caricamento dei post' });
       }
       
-      console.log(`📝 Found ${posts.length} posts`);
+      console.log(`📝 Found ${posts.length} posts with user data`);
       res.json({ posts: posts || [] });
     }
   );
