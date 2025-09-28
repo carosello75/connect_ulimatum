@@ -432,9 +432,12 @@ app.post('/api/auth/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Ensure name is not empty, use username as fallback
+    const displayName = name && name.trim() ? name.trim() : username;
+    
     db.run(
       'INSERT INTO users (username, email, password, name) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, name],
+      [username, email, hashedPassword, displayName],
       function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint failed')) {

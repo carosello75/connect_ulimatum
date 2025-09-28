@@ -3502,7 +3502,9 @@
                     const response = await fetch('/api/users');
                     if (response.ok) {
                         const users = await response.json();
+                        console.log('👥 Users from backend:', users);
                         const realUsers = users.filter(user => user.id !== currentUser.id);
+                        console.log('👥 Real users (filtered):', realUsers);
                         
                         if (realUsers.length > 0) {
                             noUsersMessage.style.display = 'none';
@@ -3515,8 +3517,8 @@
                                         }
                                     </div>
                                     <div class="follow-info">
-                                        <div class="follow-name">${user.name}</div>
-                                        <div class="follow-username">@${user.username}</div>
+                                        <div class="follow-name">${user.name || user.username || 'Utente'}</div>
+                                        <div class="follow-username">@${user.username || 'user'}</div>
                                     </div>
                                     <button class="follow-btn" onclick="followUser('${user.id}')">Segui</button>
                                     <button class="message-btn" onclick="openChat('${user.id}')" style="background: #1a8cd8; color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; margin-left: 5px; font-size: 12px;">💬</button>
