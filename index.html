@@ -2514,9 +2514,9 @@
             renderPosts();
         }
         
-        // Load all posts for home feed (from all users)
+        // Load all posts for home feed (GLOBAL - from all users)
         async function loadAllPostsForHome() {
-            console.log('🏠 Loading all posts for home feed...');
+            console.log('🏠 Loading all posts for home feed (GLOBAL)...');
             try {
                 // Try to load all posts from database
                 const response = await fetch('/api/posts');
@@ -2524,7 +2524,7 @@
                     const data = await response.json();
                     if (data.posts && data.posts.length > 0) {
                         posts = data.posts;
-                        console.log('🏠 Loaded', posts.length, 'posts from database');
+                        console.log('🏠 Loaded', posts.length, 'posts from database (GLOBAL)');
                         renderPosts();
                         return;
                     }
@@ -2533,20 +2533,16 @@
                 console.log('🏠 Database load failed, trying localStorage:', error);
             }
             
-            // Fallback: aggregate posts from all users in localStorage
-            const allPosts = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('connectPosts_')) {
-                    const userPosts = JSON.parse(localStorage.getItem(key) || '[]');
-                    allPosts.push(...userPosts);
-                }
+            // Fallback: load from GLOBAL localStorage
+            const savedPosts = localStorage.getItem('connectPosts');
+            if (savedPosts) {
+                posts = JSON.parse(savedPosts);
+                console.log('🏠 Loaded', posts.length, 'posts from localStorage (GLOBAL)');
+            } else {
+                posts = [];
+                console.log('🏠 No posts found in localStorage');
             }
             
-            // Sort by timestamp
-            allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            posts = allPosts;
-            console.log('🏠 Loaded', posts.length, 'posts from localStorage');
             renderPosts();
         }
         
@@ -2619,33 +2615,26 @@
 
         // Save posts to localStorage and database
         async function savePosts() {
-            if (currentUser && currentUser.id) {
-                // Save user-specific posts to localStorage
-                const userPostsKey = `connectPosts_${currentUser.id}`;
-                localStorage.setItem(userPostsKey, JSON.stringify(posts));
+            // Save to GLOBAL localStorage (not user-specific)
+            localStorage.setItem('connectPosts', JSON.stringify(posts));
+            
+            // Save to database via API (GLOBAL)
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        posts: posts
+                    })
+                });
                 
-                // Save to database via API
-                try {
-                    const response = await fetch('/api/posts', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userId: currentUser.id,
-                            posts: posts
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        console.log('Database save failed, using localStorage only');
-                    }
-                } catch (error) {
-                    console.log('Database save error, using localStorage only:', error);
+                if (!response.ok) {
+                    console.log('Database save failed, using localStorage only');
                 }
-            } else {
-                // Fallback to global posts
-                localStorage.setItem('connectPosts', JSON.stringify(posts));
+            } catch (error) {
+                console.log('Database save error, using localStorage only:', error);
             }
         }
 
