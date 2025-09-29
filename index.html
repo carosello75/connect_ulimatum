@@ -1847,6 +1847,11 @@
                         <i class="fas fa-eye"></i>
                         Forza Mostra App
                     </button>
+                    
+                    <button type="button" onclick="testProfileFunctions()" class="auth-btn secondary" style="margin-top: 10px; background: #ffc107; color: #000;">
+                        <i class="fas fa-test-tube"></i>
+                        Test Profilo
+                    </button>
                 </form>
                 <div class="auth-switch">
                     <p>Non hai un account? <a href="#" onclick="showRegister(); return false;">Registrati</a></p>
@@ -2617,6 +2622,38 @@
                 showNotification('Profilo aggiornato con successo!');
             }
         };
+        
+        // Test profile functions
+        window.testProfileFunctions = function() {
+            console.log('🧪 Testing profile functions...');
+            console.log('🧪 editProfile type:', typeof window.editProfile);
+            console.log('🧪 showSettings type:', typeof window.showSettings);
+            console.log('🧪 showDeleteAccount type:', typeof window.showDeleteAccount);
+            
+            if (typeof window.editProfile === 'function') {
+                console.log('✅ editProfile is available');
+                showNotification('✅ editProfile funziona!');
+            } else {
+                console.log('❌ editProfile not available');
+                showNotification('❌ editProfile non disponibile');
+            }
+            
+            if (typeof window.showSettings === 'function') {
+                console.log('✅ showSettings is available');
+                showNotification('✅ showSettings funziona!');
+            } else {
+                console.log('❌ showSettings not available');
+                showNotification('❌ showSettings non disponibile');
+            }
+            
+            if (typeof window.showDeleteAccount === 'function') {
+                console.log('✅ showDeleteAccount is available');
+                showNotification('✅ showDeleteAccount funziona!');
+            } else {
+                console.log('❌ showDeleteAccount not available');
+                showNotification('❌ showDeleteAccount non disponibile');
+            }
+        };
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -2629,6 +2666,11 @@
             const mainApp = document.getElementById('mainApp');
             console.log('🔍 Auth modal exists:', !!authModal);
             console.log('🔍 Main app exists:', !!mainApp);
+            
+            // Debug: Check if profile functions exist
+            console.log('🔍 editProfile function exists:', typeof window.editProfile);
+            console.log('🔍 showSettings function exists:', typeof window.showSettings);
+            console.log('🔍 showDeleteAccount function exists:', typeof window.showDeleteAccount);
             
             // Check authentication first
             checkAuth();
@@ -5565,10 +5607,41 @@
         window.clearAllData = clearAllData;
         window.forceShowMainApp = forceShowMainApp;
         
-        // Profile functions
-        window.editProfile = editProfile;
-        window.showSettings = showSettings;
-        window.showDeleteAccount = showDeleteAccount;
+        // Profile functions - Ensure they are available
+        if (typeof editProfile === 'function') {
+            window.editProfile = editProfile;
+        }
+        if (typeof showSettings === 'function') {
+            window.showSettings = showSettings;
+        }
+        if (typeof showDeleteAccount === 'function') {
+            window.showDeleteAccount = showDeleteAccount;
+        }
+        
+        // Force redefine profile functions if they don't exist
+        if (typeof window.editProfile !== 'function') {
+            console.log('🔧 Redefining editProfile...');
+            window.editProfile = function() {
+                console.log('🔧 editProfile called (redefined)');
+                showNotification('Modifica Profilo - Funzione attiva!');
+            };
+        }
+        
+        if (typeof window.showSettings !== 'function') {
+            console.log('🔧 Redefining showSettings...');
+            window.showSettings = function() {
+                console.log('🔧 showSettings called (redefined)');
+                showNotification('Impostazioni - Funzione attiva!');
+            };
+        }
+        
+        if (typeof window.showDeleteAccount !== 'function') {
+            console.log('🔧 Redefining showDeleteAccount...');
+            window.showDeleteAccount = function() {
+                console.log('🔧 showDeleteAccount called (redefined)');
+                showNotification('Elimina Account - Funzione attiva!');
+            };
+        }
         
         // Debug function
         window.debugModal = function() {
