@@ -12,7 +12,13 @@ const __dirname = path.dirname(__filename);
 
 // Simple API endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({ status: 'OK', message: 'Social Network API is running!', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+// Fallback endpoint for users (since Railway uses this server)
+app.get('/api/users', (req, res) => {
+  console.log('🔄 Fallback endpoint requested: /api/users');
+  res.json({ status: 'OK', message: 'Social Network API is running!', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
 // Static frontend (serve from root directory)
