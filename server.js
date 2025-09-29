@@ -16,10 +16,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Fallback endpoint for users (since Railway uses this server)
-app.get('/api/users', (req, res) => {
-  console.log('🔄 Fallback endpoint requested: /api/users');
-  res.json({ status: 'OK', message: 'Social Network API is running!', timestamp: new Date().toISOString(), uptime: process.uptime() });
-});
+// Removed fallback endpoint - Railway should use backend/server.cjs
 
 // Static frontend (serve from root directory)
 app.use(express.static(__dirname));
