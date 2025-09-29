@@ -3692,10 +3692,14 @@
                     // Try to load users from backend
                     const response = await fetch('/api/users');
                     if (response.ok) {
-                        const users = await response.json();
-                        console.log('📱 Mobile users from backend:', users);
+                        const data = await response.json();
+                        console.log('📱 Mobile users from backend:', data);
                         console.log('📱 Current user ID:', currentUser.id);
                         console.log('📱 Current user email:', currentUser.email);
+                        
+                        // Check if data is an array, if not use demo users
+                        const users = Array.isArray(data) ? data : [];
+                        console.log('📱 Users array:', users);
                         
                         // Filter out current user by ID and email
                         const realUsers = users.filter(user => {
@@ -3727,8 +3731,41 @@
                                 </div>
                             `).join('');
                         } else {
-                            mobileNoUsersMessage.style.display = 'block';
-                            mobileUsersList.innerHTML = '';
+                            // Fallback to demo users if no real users
+                            console.log('📱 No real users, using demo users');
+                            const demoUsers = [
+                                { id: 1, username: 'marcorossi', name: 'Marco Rossi', email: 'marco@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                                { id: 2, username: 'sofiatech', name: 'Sofia Tech', email: 'sofia@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                                { id: 3, username: 'technewsit', name: 'Tech News Italia', email: 'tech@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' }
+                            ];
+                            
+                            const filteredDemoUsers = demoUsers.filter(user => {
+                                const isNotCurrentUser = user.id !== currentUser.id;
+                                const isNotCurrentEmail = user.email !== currentUser.email;
+                                return isNotCurrentUser && isNotCurrentEmail;
+                            });
+                            
+                            if (filteredDemoUsers.length > 0) {
+                                mobileNoUsersMessage.style.display = 'none';
+                                mobileUsersList.innerHTML = filteredDemoUsers.map(user => `
+                                    <div class="mobile-user-item">
+                                        <div class="mobile-user-avatar">
+                                            <i class="${user.avatar || 'fas fa-user'}"></i>
+                                        </div>
+                                        <div class="mobile-user-info">
+                                            <div class="mobile-user-name">${user.name || user.username || 'Utente'}</div>
+                                            <div class="mobile-user-username">@${user.username || 'user'}</div>
+                                        </div>
+                                        <div class="mobile-user-actions">
+                                            <button class="mobile-follow-btn" onclick="followUser('${user.id}')">Segui</button>
+                                            <button class="mobile-message-btn" onclick="openChat('${user.id}')">💬</button>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            } else {
+                                mobileNoUsersMessage.style.display = 'block';
+                                mobileUsersList.innerHTML = '';
+                            }
                         }
                     } else {
                         mobileNoUsersMessage.style.display = 'block';
