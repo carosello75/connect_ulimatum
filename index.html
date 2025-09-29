@@ -948,11 +948,15 @@
         
         /* Main App Hidden Initially */
         #mainApp {
-            display: none;
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
         
         #mainApp.show {
-            display: grid;
+            display: grid !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         /* Comments */
@@ -1832,6 +1836,11 @@
                     <button type="button" onclick="clearAllData()" class="auth-btn secondary" style="margin-top: 10px; background: #dc3545;">
                         <i class="fas fa-trash"></i>
                         Reset Completo
+                    </button>
+                    
+                    <button type="button" onclick="forceShowMainApp()" class="auth-btn secondary" style="margin-top: 10px; background: #28a745;">
+                        <i class="fas fa-eye"></i>
+                        Forza Mostra App
                     </button>
                 </form>
                 <div class="auth-switch">
@@ -4840,14 +4849,25 @@
             
             if (authModal) {
                 authModal.style.display = 'none';
+                authModal.style.visibility = 'hidden';
+                authModal.style.opacity = '0';
                 console.log('✅ Auth modal hidden');
             }
             
             if (mainApp) {
                 mainApp.style.display = 'grid';
+                mainApp.style.visibility = 'visible';
+                mainApp.style.opacity = '1';
                 mainApp.classList.add('show');
                 console.log('✅ Main app shown with display: grid');
                 console.log('🔍 Main app computed style:', window.getComputedStyle(mainApp).display);
+                console.log('🔍 Main app visibility:', window.getComputedStyle(mainApp).visibility);
+                console.log('🔍 Main app opacity:', window.getComputedStyle(mainApp).opacity);
+                
+                // Force visibility with !important
+                mainApp.style.setProperty('display', 'grid', 'important');
+                mainApp.style.setProperty('visibility', 'visible', 'important');
+                mainApp.style.setProperty('opacity', '1', 'important');
             } else {
                 console.error('❌ Main app element not found!');
             }
@@ -5264,6 +5284,37 @@
             showAuthModal();
             showNotification('Dati puliti! Ricarica la pagina.');
         }
+        
+        // Force show main app function
+        function forceShowMainApp() {
+            console.log('🔧 Force showing main app...');
+            const authModal = document.getElementById('authModal');
+            const mainApp = document.getElementById('mainApp');
+            
+            if (authModal) {
+                authModal.style.display = 'none';
+                authModal.style.visibility = 'hidden';
+                authModal.style.opacity = '0';
+                authModal.style.setProperty('display', 'none', 'important');
+                authModal.style.setProperty('visibility', 'hidden', 'important');
+                authModal.style.setProperty('opacity', '0', 'important');
+            }
+            
+            if (mainApp) {
+                mainApp.style.display = 'grid';
+                mainApp.style.visibility = 'visible';
+                mainApp.style.opacity = '1';
+                mainApp.classList.add('show');
+                mainApp.style.setProperty('display', 'grid', 'important');
+                mainApp.style.setProperty('visibility', 'visible', 'important');
+                mainApp.style.setProperty('opacity', '1', 'important');
+                mainApp.style.setProperty('z-index', '9999', 'important');
+                mainApp.style.setProperty('position', 'relative', 'important');
+                
+                console.log('🔧 Main app forced to show');
+                showNotification('App forzata a mostrarsi!');
+            }
+        }
 
         // Make functions globally accessible
         window.showAuthModal = showAuthModal;
@@ -5273,6 +5324,7 @@
         window.handleLogin = handleLogin;
         window.handleRegister = handleRegister;
         window.clearAllData = clearAllData;
+        window.forceShowMainApp = forceShowMainApp;
         
         // Debug function
         window.debugModal = function() {
