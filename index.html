@@ -36,6 +36,8 @@
             background: #000;
             border-right: 1px solid #2f3336;
             padding: 20px 0;
+            position: relative;
+            z-index: 1;
             position: sticky;
             top: 0;
             height: 100vh;
@@ -142,6 +144,8 @@
             background: #000;
             border-right: 1px solid #2f3336;
             padding: 20px;
+            position: relative;
+            z-index: 2;
             overflow-y: auto;
             max-width: 600px;
             margin: 0 auto;
@@ -1052,6 +1056,7 @@
             background: #000;
             padding: 20px;
             position: sticky;
+            z-index: 1;
             top: 0;
             height: 100vh;
             overflow-y: auto;
@@ -5390,6 +5395,8 @@
         window.showTerms = showTerms;
         window.showPrivacyPolicy = showPrivacyPolicy;
         window.showDeleteAccount = showDeleteAccount;
+        window.editProfile = editProfile;
+        window.showSettings = showSettings;
         window.confirmDeleteAccount = confirmDeleteAccount;
         window.changeProfilePicture = changeProfilePicture;
         window.updateAllPostAvatars = updateAllPostAvatars;
