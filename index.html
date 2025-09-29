@@ -37,7 +37,7 @@
             border-right: 1px solid #2f3336;
             padding: 20px 0;
             position: relative;
-            z-index: 1;
+            z-index: 1000;
             position: sticky;
             top: 0;
             height: 100vh;
@@ -3002,27 +3002,27 @@
             renderPosts();
         }
         
-        // Load all posts for home feed (GLOBAL - from all users)
-        async function loadAllPostsForHome() {
-            console.log('🏠 Loading all posts for home feed (GLOBAL)...');
+        // Load user-specific posts for home feed
+        async function loadUserPostsForHome() {
+            console.log('🏠 Loading user posts for home feed...');
             try {
-                // Try to load all posts from database
-                const response = await fetch(API_BASE_URL + '/api/posts');
-                console.log('🏠 Database response status:', response.status);
-                console.log('🏠 Database response ok:', response.ok);
+                // Try to load user-specific posts from database
+                const response = await fetch(API_BASE_URL + '/api/posts/user/' + currentUser.id);
+                console.log('🏠 User posts response status:', response.status);
+                console.log('🏠 User posts response ok:', response.ok);
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('🏠 Database response data:', data);
+                    console.log('🏠 User posts response data:', data);
                     
                     if (data.posts && data.posts.length > 0) {
                         posts = data.posts;
-                        console.log('🏠 Loaded', posts.length, 'posts from database (GLOBAL)');
-                        console.log('🏠 First post:', posts[0]);
+                        console.log('🏠 Loaded', posts.length, 'user posts from database');
+                        console.log('🏠 First user post:', posts[0]);
                         renderPosts();
                         return;
                     } else {
-                        console.log('🏠 No posts in database response');
+                        console.log('🏠 No user posts in database response');
                     }
                 } else {
                     console.log('🏠 Database response not ok:', response.status);
@@ -3039,6 +3039,48 @@
             } else {
                 posts = [];
                 console.log('🏠 No posts found in localStorage');
+            }
+            
+            renderPosts();
+        }
+        
+        // Load all posts for explore feed (GLOBAL - from all users)
+        async function loadAllPostsForExplore() {
+            console.log('🔍 Loading all posts for explore feed (GLOBAL)...');
+            try {
+                // Try to load all posts from database
+                const response = await fetch(API_BASE_URL + '/api/posts');
+                console.log('🔍 Database response status:', response.status);
+                console.log('🔍 Database response ok:', response.ok);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🔍 Database response data:', data);
+                    
+                    if (data.posts && data.posts.length > 0) {
+                        posts = data.posts;
+                        console.log('🔍 Loaded', posts.length, 'posts from database (GLOBAL)');
+                        console.log('🔍 First post:', posts[0]);
+                        renderPosts();
+                        return;
+                    } else {
+                        console.log('🔍 No posts in database response');
+                    }
+                } else {
+                    console.log('🔍 Database response not ok:', response.status);
+                }
+            } catch (error) {
+                console.log('🔍 Database load failed, trying localStorage:', error);
+            }
+            
+            // Fallback: load from GLOBAL localStorage
+            const savedPosts = localStorage.getItem('connectPosts');
+            if (savedPosts) {
+                posts = JSON.parse(savedPosts);
+                console.log('🔍 Loaded', posts.length, 'posts from localStorage (GLOBAL)');
+            } else {
+                posts = [];
+                console.log('🔍 No posts found in localStorage');
             }
             
             renderPosts();
@@ -4309,7 +4351,8 @@
         // Make functions global
         window.loadRealUsers = loadRealUsers;
         window.loadMobileUsers = loadMobileUsers;
-        window.loadAllPostsForHome = loadAllPostsForHome;
+        window.loadUserPostsForHome = loadUserPostsForHome;
+        window.loadAllPostsForExplore = loadAllPostsForExplore;
         window.followUser = followUser;
         
         // Messages system
@@ -4459,10 +4502,31 @@
         };
         
         // Load notifications
-        function loadNotifications() {
+        async function loadNotifications() {
             console.log('🔔 loadNotifications called');
             const notificationsContainer = document.getElementById('notifications-content');
             if (notificationsContainer) {
+                try {
+                    // Try to load notifications from API
+                    const response = await fetch(API_BASE_URL + '/api/notifications', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('🔔 API notifications loaded:', data.notifications?.length || 0);
+                        notifications = data.notifications || [];
+                    } else {
+                        console.log('🔔 API notifications failed, using local');
+                    }
+                } catch (error) {
+                    console.log('🔔 API notifications error, using local:', error);
+                }
+                
                 console.log('🔔 Total notifications:', notifications.length);
                 const unreadNotifications = notifications.filter(n => !n.read);
                 console.log('🔔 Unread notifications:', unreadNotifications.length);
@@ -4768,9 +4832,9 @@
                 loadUserProfileData();
             }
             
-            // Load all posts for home section (not just user-specific)
+            // Load user-specific posts for home section
             if (sectionName === 'home') {
-                loadAllPostsForHome();
+                loadUserPostsForHome();
                 // Also reload users when going to home
                 loadRealUsers();
             }
@@ -4791,7 +4855,7 @@
             
             // Load all posts for explore section
             if (sectionName === 'explore') {
-                loadExplorePosts();
+                loadAllPostsForExplore();
             }
             
             showNotification(`Sezione ${sectionName} attivata!`);
@@ -5549,9 +5613,9 @@
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     console.log('✅ User saved to localStorage');
                     
-                    // Load all posts for home feed (GLOBAL - from all users)
-                    console.log('✅ Loading posts...');
-                    loadAllPostsForHome();
+                    // Load user posts for home feed
+                    console.log('✅ Loading user posts...');
+                    loadUserPostsForHome();
                     
                     console.log('✅ Showing notification and main app...');
                     showNotification('Login effettuato con successo!');
@@ -5590,32 +5654,9 @@
                 if (loginFormElement) {
                     loginFormElement.style.pointerEvents = 'auto';
                 }
-                // Fallback for demo purposes
-                currentUser = {
-                    id: btoa(email).replace(/[^a-zA-Z0-9]/g, ''),
-                    name: email === 'fabio.cavalieri@libero.it' ? 'Fabio' : email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
-                    username: email === 'fabio.cavalieri@libero.it' ? 'fabio75' : email.split('@')[0],
-                    email: email,
-                    avatar: 'fas fa-user',
-                    avatarType: 'icon'
-                };
-                isAuthenticated = true;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                    // Load all posts for home feed (GLOBAL - from all users)
-                    loadAllPostsForHome();
-                    
-                    // Restore button and form on success
-                    if (loginButton) {
-                        loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
-                        loginButton.disabled = false;
-                    }
-                    if (loginFormElement) {
-                        loginFormElement.style.pointerEvents = 'auto';
-                    }
-                
-                showNotification('Login demo effettuato!');
-                showMainApp();
+                // Show proper error message - no fallback
+                showNotification('Errore di connessione: ' + error.message);
+                console.log('❌ Login failed - no fallback, user must use correct credentials');
             }
         }
 
@@ -5672,8 +5713,8 @@
                     // Save user data
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     
-                    // Load all posts for home feed (GLOBAL - from all users)
-                    loadAllPostsForHome();
+                    // Load user posts for home feed
+                    loadUserPostsForHome();
                     
                     showNotification('Registrazione effettuata con successo!');
                     showMainApp();
