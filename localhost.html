@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Network - Localhost</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Social Network</h1>
+        <div class="status">
+            <p><strong>Stato:</strong> <span id="status">Controllando connessione...</span></p>
+        </div>
+        
+        <a href="http://localhost:3000" class="btn" onclick="forceLocalhost()">
+            🔗 Vai a Localhost
+        </a>
+        
+        <button class="btn" onclick="checkServer()">
+            🔍 Controlla Server
+        </button>
+        
+        <div id="info" style="margin-top: 20px; font-size: 14px; color: #666;">
+            <p>Se il server non risponde, assicurati di aver eseguito:</p>
+            <code>npm run api:dev</code>
+        </div>
+    </div>
+
+    <script>
+        function forceLocalhost() {
+            // Forza il redirect a localhost
+            window.location.href = 'http://localhost:3000/?force=localhost&t=' + Date.now();
+        }
+        
+        async function checkServer() {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = 'Controllando...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    statusEl.textContent = '✅ Server attivo: ' + data.message;
+                    statusEl.style.color = 'green';
+                } else {
+                    statusEl.textContent = '❌ Server non risponde';
+                    statusEl.style.color = 'red';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Errore: ' + error.message;
+                statusEl.style.color = 'red';
+            }
+        }
+        
+        // Controlla automaticamente il server
+        checkServer();
+    </script>
+</body>
+</html>
+
+
