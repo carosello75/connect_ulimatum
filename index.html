@@ -1822,10 +1822,6 @@
                     </button>
                     
                     <!-- Debug Button -->
-                    <button type="button" onclick="location.reload(true)" class="auth-btn secondary" style="margin-top: 10px; background: #ff6b6b;">
-                        <i class="fas fa-refresh"></i>
-                        Force Reload
-                    </button>
                     
                     <!-- Test Load Posts Button -->
                     <button type="button" onclick="loadAllPostsForHome()" class="auth-btn secondary" style="margin-top: 10px; background: #1a8cd8;">
@@ -2453,17 +2449,6 @@
             console.log('DOM Content Loaded!');
             console.log('🔄 Cache bust timestamp:', new Date().toISOString());
             console.log('🌐 Current origin:', window.location.origin);
-            console.log('🌐 Expected localhost:', window.location.origin.includes('localhost'));
-            
-            // Debug alert for cache busting
-            if (!window.location.origin.includes('localhost')) {
-                alert('⚠️ ATTENZIONE: Non stai usando localhost! Origin: ' + window.location.origin);
-                console.log('🔄 Redirecting to localhost...');
-                window.location.href = 'http://localhost:3000/?v=' + Date.now();
-                return;
-            } else {
-                console.log('✅ Usando localhost correttamente');
-            }
             
             // Check authentication first
             checkAuth();
