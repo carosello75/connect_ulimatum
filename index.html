@@ -4923,7 +4923,10 @@
                 const data = await response.json();
                 console.log('📱 Mobile login response data:', data);
                 
+                console.log('🔐 Checking login response:', { hasToken: !!data.token, hasUser: !!data.user, data });
+                
                 if (data.token && data.user) {
+                    console.log('✅ Login successful, processing user data...');
                     // Use real user data from backend
                     currentUser = {
                         id: data.user.id,
@@ -4935,18 +4938,34 @@
                         online: true
                     };
                     
+                    console.log('✅ User data processed:', currentUser);
+                    
                     isAuthenticated = true;
                     
                     // Save user data
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    console.log('✅ User saved to localStorage');
                     
                     // Load all posts for home feed (GLOBAL - from all users)
+                    console.log('✅ Loading posts...');
                     loadAllPostsForHome();
                     
+                    console.log('✅ Showing notification and main app...');
                     showNotification('Login effettuato con successo!');
                     showMainApp();
+                    
+                    // Restore button and form on success
+                    if (loginButton) {
+                        loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                        loginButton.disabled = false;
+                    }
+                    if (loginFormElement) {
+                        loginFormElement.style.pointerEvents = 'auto';
+                    }
+                    console.log('✅ Login process completed successfully');
                 } else {
-                    showNotification('Errore: ' + data.message);
+                    console.log('❌ Login failed - no token or user data');
+                    showNotification('Errore: ' + (data.message || 'Credenziali non valide'));
                     // Restore button and form
                     if (loginButton) {
                         loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
