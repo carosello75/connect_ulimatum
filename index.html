@@ -4585,8 +4585,8 @@
                     }
                 }
                 
-                // Load user-specific posts for home feed
-                loadUserPosts();
+                // Load all posts for home feed (GLOBAL - from all users)
+                loadAllPostsForHome();
                 
                 // Load user profile data
                 loadUserProfileData();
@@ -4711,8 +4711,8 @@
                 isAuthenticated = true;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Load user-specific posts for home feed
-                loadUserPosts();
+                // Load all posts for home feed (GLOBAL - from all users)
+                loadAllPostsForHome();
                 
                 showNotification('Login demo effettuato!');
                 showMainApp();
@@ -4793,8 +4793,8 @@
                 isAuthenticated = true;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Load user-specific posts for home feed
-                loadUserPosts();
+                // Load all posts for home feed (GLOBAL - from all users)
+                loadAllPostsForHome();
                 
                 showNotification('Registrazione demo effettuata!');
                 showMainApp();
