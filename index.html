@@ -2455,6 +2455,13 @@
             console.log('🌐 Current origin:', window.location.origin);
             console.log('🌐 Expected localhost:', window.location.origin.includes('localhost'));
             
+            // Debug alert for cache busting
+            if (!window.location.origin.includes('localhost')) {
+                alert('⚠️ ATTENZIONE: Non stai usando localhost! Origin: ' + window.location.origin);
+            } else {
+                console.log('✅ Usando localhost correttamente');
+            }
+            
             // Check authentication first
             checkAuth();
             
