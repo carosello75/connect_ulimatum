@@ -2450,6 +2450,12 @@
             console.log('🔄 Cache bust timestamp:', new Date().toISOString());
             console.log('🌐 Current origin:', window.location.origin);
             
+            // Debug: Check if main elements exist
+            const authModal = document.getElementById('authModal');
+            const mainApp = document.getElementById('mainApp');
+            console.log('🔍 Auth modal exists:', !!authModal);
+            console.log('🔍 Main app exists:', !!mainApp);
+            
             // Check authentication first
             checkAuth();
             
@@ -4792,11 +4798,26 @@
 
         // Show main app
         function showMainApp() {
+            console.log('🏠 showMainApp called');
             const authModal = document.getElementById('authModal');
             const mainApp = document.getElementById('mainApp');
-            if (authModal) authModal.style.display = 'none';
-            if (mainApp) mainApp.style.display = 'grid';
-            document.getElementById('mainApp').classList.add('show');
+            
+            console.log('🔍 Auth modal element:', authModal);
+            console.log('🔍 Main app element:', mainApp);
+            
+            if (authModal) {
+                authModal.style.display = 'none';
+                console.log('✅ Auth modal hidden');
+            }
+            
+            if (mainApp) {
+                mainApp.style.display = 'grid';
+                mainApp.classList.add('show');
+                console.log('✅ Main app shown with display: grid');
+                console.log('🔍 Main app computed style:', window.getComputedStyle(mainApp).display);
+            } else {
+                console.error('❌ Main app element not found!');
+            }
             
             // Update profile info if user is logged in
             if (currentUser) {
