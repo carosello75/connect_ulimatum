@@ -4148,22 +4148,9 @@
                         });
                         console.log('👥 Real users (filtered):', realUsers);
                         } else {
-                            console.log('👥 No real users from Railway, using demo users');
-                            // Fallback to demo users
-                            const demoUsers = [
-                                { id: 1, username: 'marcorossi', name: 'Marco Rossi', email: 'marco@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
-                                { id: 2, username: 'sofiatech', name: 'Sofia Tech', email: 'sofia@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
-                                { id: 3, username: 'technewsit', name: 'Tech News Italia', email: 'tech@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
-                                { id: 4, username: 'testuser', name: 'Test User', email: 'test@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
-                                { id: 6, username: 'newuser123', name: 'New User', email: 'newuser@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
-                                { id: 7, username: 'testfresh', name: 'Test User Fresh', email: 'testfresh@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' }
-                            ];
-                            
-                            realUsers = demoUsers.filter(user => {
-                                const isNotCurrentUser = user.id !== currentUser.id;
-                                const isNotCurrentEmail = user.email !== currentUser.email;
-                                return isNotCurrentUser && isNotCurrentEmail;
-                            });
+                            console.log('👥 No real users from Railway, showing message');
+                            // Show message instead of demo users
+                            realUsers = [];
                         }
                     } else {
                         console.log('👥 Railway API error, using demo users');
@@ -4205,7 +4192,7 @@
                             `).join('');
                     } else {
                         noUsersMessage.style.display = 'block';
-                        realUsersList.innerHTML = '';
+                        realUsersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><i class="fas fa-users" style="font-size: 24px; margin-bottom: 10px;"></i><br>Sii il primo a registrarti!<br><small>Gli altri utenti appariranno qui</small></div>';
                     }
                 } catch (error) {
                     console.log('👥 Error loading real users:', error);
