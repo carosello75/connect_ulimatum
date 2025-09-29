@@ -12,7 +12,7 @@
     "api": "node backend/server.cjs",
     "api:dev": "nodemon backend/server.cjs",
     "vercel-build": "npm run build",
-    "railway": "node backend/server.cjs"
+    "railway": "cd backend && node server.cjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
