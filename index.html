@@ -4718,8 +4718,10 @@
 
         // Check if user is already logged in
         function checkAuth() {
+            console.log('🔐 Checking authentication...');
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
+                console.log('✅ User found in localStorage');
                 currentUser = JSON.parse(savedUser);
                 isAuthenticated = true;
                 
@@ -4742,7 +4744,8 @@
                 showMainApp();
             } else {
                 // User not authenticated, show auth modal
-                console.log('User not authenticated, showing auth modal');
+                console.log('❌ User not authenticated, showing auth modal');
+                console.log('🔍 Auth modal element:', document.getElementById('authModal'));
                 showAuthModal();
             }
         }
@@ -4773,15 +4776,24 @@
 
         // Show auth modal
         function showAuthModal() {
-            console.log('showAuthModal called');
+            console.log('🔐 showAuthModal called');
             const authModal = document.getElementById('authModal');
             const mainApp = document.getElementById('mainApp');
+            
+            console.log('🔍 Auth modal element:', authModal);
+            console.log('🔍 Main app element:', mainApp);
+            
             if (authModal) {
                 authModal.style.display = 'flex';
-                console.log('Auth modal shown');
+                console.log('✅ Auth modal shown with display: flex');
+                console.log('🔍 Auth modal computed style:', window.getComputedStyle(authModal).display);
+            } else {
+                console.error('❌ Auth modal element not found!');
             }
+            
             if (mainApp) {
                 mainApp.style.display = 'none';
+                console.log('✅ Main app hidden');
             }
         }
 
