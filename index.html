@@ -4740,6 +4740,10 @@
                 loadUserProfileData();
                 
                 showMainApp();
+            } else {
+                // User not authenticated, show auth modal
+                console.log('User not authenticated, showing auth modal');
+                showAuthModal();
             }
         }
 
@@ -4763,6 +4767,16 @@
                 console.log('🔄 Auto-reloading users...');
                 loadRealUsers();
             }, 30000);
+        }
+
+        // Show auth modal
+        function showAuthModal() {
+            console.log('showAuthModal called');
+            const authModal = document.getElementById('authModal');
+            if (authModal) {
+                authModal.style.display = 'flex';
+                console.log('Auth modal shown');
+            }
         }
 
         // Show login form
@@ -5108,6 +5122,7 @@
         };
         
         // Make functions globally accessible
+        window.showAuthModal = showAuthModal;
         window.showLogin = showLogin;
         window.showRegister = showRegister;
         window.showForgotPassword = showForgotPassword;
