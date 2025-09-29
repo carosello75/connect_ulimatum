@@ -1828,6 +1828,11 @@
                         <i class="fas fa-refresh"></i>
                         Test Carica Post
                     </button>
+                    
+                    <button type="button" onclick="clearAllData()" class="auth-btn secondary" style="margin-top: 10px; background: #dc3545;">
+                        <i class="fas fa-trash"></i>
+                        Reset Completo
+                    </button>
                 </form>
                 <div class="auth-switch">
                     <p>Non hai un account? <a href="#" onclick="showRegister(); return false;">Registrati</a></p>
@@ -5246,6 +5251,17 @@
             }
         };
         
+        // Clear all data function
+        function clearAllData() {
+            console.log('🗑️ Clearing all data...');
+            localStorage.clear();
+            sessionStorage.clear();
+            currentUser = null;
+            isAuthenticated = false;
+            showAuthModal();
+            showNotification('Dati puliti! Ricarica la pagina.');
+        }
+
         // Make functions globally accessible
         window.showAuthModal = showAuthModal;
         window.showLogin = showLogin;
@@ -5253,6 +5269,7 @@
         window.showForgotPassword = showForgotPassword;
         window.handleLogin = handleLogin;
         window.handleRegister = handleRegister;
+        window.clearAllData = clearAllData;
         
         // Debug function
         window.debugModal = function() {
