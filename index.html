@@ -2458,6 +2458,9 @@
             // Debug alert for cache busting
             if (!window.location.origin.includes('localhost')) {
                 alert('⚠️ ATTENZIONE: Non stai usando localhost! Origin: ' + window.location.origin);
+                console.log('🔄 Redirecting to localhost...');
+                window.location.href = 'http://localhost:3000/?v=' + Date.now();
+                return;
             } else {
                 console.log('✅ Usando localhost correttamente');
             }
