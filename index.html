@@ -5403,37 +5403,44 @@
         function checkAuth() {
             console.log('🔐 Checking authentication...');
             const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                console.log('✅ User found in localStorage');
+            const authToken = localStorage.getItem('auth_token');
+            
+            if (savedUser && authToken) {
+                console.log('✅ User and token found in localStorage');
                 currentUser = JSON.parse(savedUser);
                 console.log('🔍 Current user ID:', currentUser.id);
                 console.log('🔍 Current user email:', currentUser.email);
                 
-                // Check if user still exists in database
-                fetch(`${API_BASE_URL}/api/users`)
-                    .then(response => response.json())
-                    .then(users => {
-                        const userExists = users.some(user => user.id === currentUser.id);
-                        if (!userExists) {
-                            console.log('❌ User no longer exists in database, clearing localStorage');
+                // Verify token is still valid by checking with backend
+                fetch(`${API_BASE_URL}/api/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('✅ Token is valid, user authenticated');
+                            isAuthenticated = true;
+                            loadUserData();
+                        } else {
+                            console.log('❌ Token invalid, clearing localStorage');
                             localStorage.removeItem('currentUser');
                             localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_user');
                             showAuthModal();
-                            return;
                         }
-                isAuthenticated = true;
-                        loadUserData();
                     })
                     .catch(error => {
-                        console.log('❌ Error checking user existence:', error);
-                        // Fallback: clear localStorage and show auth modal
+                        console.log('❌ Error verifying token:', error);
+                        // Clear all auth data and show login
                         localStorage.removeItem('currentUser');
                         localStorage.removeItem('auth_token');
+                        localStorage.removeItem('auth_user');
                         showAuthModal();
                     });
             } else {
-                console.log('❌ User not authenticated, showing auth modal');
-                console.log('🔍 Auth modal element:', document.getElementById('authModal'));
+                console.log('❌ No user or token found in localStorage');
                 showAuthModal();
             }
         }
@@ -5709,49 +5716,23 @@
                 const data = await response.json();
                 
                 if (data.token && data.user) {
-                    // Use real user data from backend
-                    currentUser = {
-                        id: data.user.id,
-                        name: data.user.name,
-                        username: data.user.username,
-                        email: data.user.email,
-                        avatar: data.user.avatar || "fas fa-user",
-                        avatarType: data.user.avatar ? "image" : "icon",
-                        online: true
-                    };
+                    // Registration successful - show login form instead of auto-login
+                    showNotification('Registrazione effettuata con successo! Ora puoi accedere con le tue credenziali.');
+                    showLogin();
                     
-                    isAuthenticated = true;
-                    
-                    // Save user data
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    
-                    // Load user posts for home feed
-                    loadUserPostsForHome();
-                    
-                    showNotification('Registrazione effettuata con successo!');
-                    showMainApp();
+                    // Clear registration form
+                    document.getElementById('registerName').value = '';
+                    document.getElementById('registerUsername').value = '';
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    document.getElementById('acceptTerms').checked = false;
                 } else {
                     showNotification('Errore: ' + data.message);
                 }
             } catch (error) {
                 console.error('Register error:', error);
-                // Fallback for demo purposes
-                currentUser = {
-                    id: btoa(email).replace(/[^a-zA-Z0-9]/g, ''),
-                    name: name || 'Fabio',
-                    username: username || 'fabio75',
-                    email: email,
-                    avatar: 'fas fa-user',
-                    avatarType: 'icon'
-                };
-                isAuthenticated = true;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                // Load all posts for home feed (GLOBAL - from all users)
-                loadAllPostsForHome();
-                
-                showNotification('Registrazione demo effettuata!');
-                showMainApp();
+                showNotification('Errore nella registrazione: ' + error.message);
             }
         }
 
@@ -5787,16 +5768,24 @@
 
         // Logout function
         function logout() {
+            console.log('🔐 Logout in corso...');
             currentUser = null;
             isAuthenticated = false;
+            
+            // Clear all authentication data
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
             
             // Clear posts array
             posts = [];
             
+            // Show auth modal
             document.getElementById('authModal').style.display = 'flex';
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('mainApp').classList.remove('show');
+            
+            console.log('✅ Logout completato - tutti i dati rimossi');
             showNotification('Logout effettuato!');
         }
 
