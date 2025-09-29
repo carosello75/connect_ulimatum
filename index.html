@@ -2225,15 +2225,15 @@
                     </div>
                     
                     <div class="profile-actions">
-                        <button class="profile-btn primary" onclick="editProfile()">
+                        <button class="profile-btn primary" onclick="window.editProfile && window.editProfile()">
                             <i class="fas fa-edit"></i>
                             Modifica Profilo
                         </button>
-                        <button class="profile-btn secondary" onclick="showSettings()">
+                        <button class="profile-btn secondary" onclick="window.showSettings && window.showSettings()">
                             <i class="fas fa-cog"></i>
                             Impostazioni
                         </button>
-                        <button class="profile-btn danger" onclick="showDeleteAccount()" style="background: #dc3545; color: white;">
+                        <button class="profile-btn danger" onclick="window.showDeleteAccount && window.showDeleteAccount()" style="background: #dc3545; color: white;">
                             <i class="fas fa-trash"></i>
                             Elimina Account
                         </button>
@@ -2465,6 +2465,158 @@
         
         // Make test function global immediately
         window.testFunction = testFunction;
+        
+        // Make profile functions global immediately
+        window.editProfile = function() {
+            console.log('🔧 editProfile called');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                    <h3 style="color: #fff; margin-bottom: 20px;">Modifica Profilo</h3>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Nome:</label>
+                        <input type="text" id="editName" value="${currentUser ? currentUser.name : 'Il Tuo Nome'}" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Username:</label>
+                        <input type="text" id="editUsername" value="${currentUser ? currentUser.username : 'username'}" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Bio:</label>
+                        <textarea id="editBio" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none; height: 100px;" placeholder="Racconta qualcosa di te...">${currentUser ? currentUser.bio || '' : ''}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Annulla</button>
+                        <button onclick="saveProfileChanges(); this.closest('div').parentElement.remove();" style="background: #1d9bf0; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Salva</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.showSettings = function() {
+            console.log('🔧 showSettings called');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="color: #fff; margin-bottom: 20px;">Impostazioni</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #fff; margin-bottom: 10px;">Account</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 10px;">
+                            <span style="color: #fff;">Cambia password</span>
+                            <button style="background: #1d9bf0; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Modifica</button>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 10px;">
+                            <span style="color: #fff;">Email</span>
+                            <button style="background: #1d9bf0; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Modifica</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #fff; margin-bottom: 10px;">Privacy</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 10px;">
+                            <span style="color: #fff;">Profilo pubblico</span>
+                            <input type="checkbox" checked style="transform: scale(1.2);">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px;">
+                            <span style="color: #fff;">Mostra email</span>
+                            <input type="checkbox" style="transform: scale(1.2);">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Chiudi</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.showDeleteAccount = function() {
+            console.log('🔧 showDeleteAccount called');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                    <h3 style="color: #dc3545; margin-bottom: 20px;">🗑️ Elimina Account</h3>
+                    <div style="color: #fff; margin-bottom: 20px;">
+                        <p style="margin-bottom: 15px;">Sei sicuro di voler eliminare il tuo account?</p>
+                        <p style="color: #dc3545; font-weight: bold;">⚠️ Questa azione non può essere annullata!</p>
+                        <p style="margin-top: 15px; color: #ccc;">Tutti i tuoi post, commenti e dati verranno eliminati permanentemente.</p>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Annulla</button>
+                        <button onclick="confirmDeleteAccount(); this.closest('div').parentElement.remove();" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Elimina Definitivamente</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        // Save profile changes function
+        window.saveProfileChanges = function() {
+            console.log('🔧 saveProfileChanges called');
+            const name = document.getElementById('editName').value;
+            const username = document.getElementById('editUsername').value;
+            const bio = document.getElementById('editBio').value;
+            
+            if (currentUser) {
+                currentUser.name = name;
+                currentUser.username = username;
+                currentUser.bio = bio;
+                
+                // Update localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Update profile display
+                const profileName = document.getElementById('profileName');
+                const profileUsername = document.getElementById('profileUsername');
+                
+                if (profileName) profileName.textContent = name;
+                if (profileUsername) profileUsername.textContent = '@' + username;
+                
+                showNotification('Profilo aggiornato con successo!');
+            }
+        };
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
