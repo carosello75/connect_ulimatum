@@ -391,10 +391,17 @@
         /* Content Sections */
         .content-section {
             display: none;
+            position: relative;
+            z-index: 1000;
         }
         
         .content-section.active {
             display: block;
+        }
+        
+        /* Specific z-index for more section */
+        #more-section.active {
+            z-index: 1004;
         }
         
         /* Explore Section */
@@ -631,6 +638,8 @@
         /* More Section */
         .more-content {
             padding: 20px;
+            position: relative;
+            z-index: 1001;
         }
         
         .more-item {
@@ -819,6 +828,8 @@
         /* More Section Advanced */
         .more-section {
             margin-bottom: 30px;
+            position: relative;
+            z-index: 1002;
         }
         
         .more-section h3 {
@@ -837,6 +848,7 @@
             cursor: pointer;
             transition: background 0.2s;
             position: relative;
+            z-index: 1003;
         }
         
         .more-item:hover {
