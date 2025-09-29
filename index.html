@@ -2209,6 +2209,10 @@
                             <i class="fas fa-cog"></i>
                             Impostazioni
                         </button>
+                        <button class="profile-btn danger" onclick="showDeleteAccount()" style="background: #dc3545; color: white;">
+                            <i class="fas fa-trash"></i>
+                            Elimina Account
+                        </button>
                     </div>
                     
                     <div class="profile-tabs">
@@ -4570,6 +4574,145 @@
             document.body.appendChild(modal);
         }
 
+        // Show delete account modal
+        function showDeleteAccount() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                    <h3 style="color: #dc3545; margin-bottom: 20px;">🗑️ Elimina Account</h3>
+                    <div style="color: #fff; margin-bottom: 20px;">
+                        <p style="margin-bottom: 15px;">Sei sicuro di voler eliminare il tuo account?</p>
+                        <p style="color: #dc3545; font-weight: bold;">⚠️ Questa azione non può essere annullata!</p>
+                        <p style="color: #71767b; font-size: 0.9rem; margin-top: 10px;">
+                            Verranno eliminati:
+                            <br>• Il tuo profilo e tutti i dati
+                            <br>• Tutti i tuoi post e commenti
+                            <br>• I tuoi follower e following
+                            <br>• Tutte le tue notifiche
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Motivo dell'eliminazione:</label>
+                        <select id="deleteReason" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                            <option value="">Seleziona un motivo</option>
+                            <option value="privacy">Problemi di privacy</option>
+                            <option value="spam">Troppo spam</option>
+                            <option value="not_useful">Non è utile</option>
+                            <option value="technical_issues">Problemi tecnici</option>
+                            <option value="other">Altro</option>
+                        </select>
+                    </div>
+                    <div id="customReasonDiv" style="margin-bottom: 20px; display: none;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Specifica il motivo:</label>
+                        <textarea id="customReason" placeholder="Descrivi il motivo..." style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none; height: 80px;"></textarea>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Conferma con la tua password:</label>
+                        <input type="password" id="deletePassword" placeholder="Inserisci la tua password" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="confirmDeleteAccount()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">
+                            🗑️ Elimina Definitivamente
+                        </button>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">
+                            Annulla
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Show custom reason field when "other" is selected
+            document.getElementById('deleteReason').addEventListener('change', function() {
+                const customDiv = document.getElementById('customReasonDiv');
+                if (this.value === 'other') {
+                    customDiv.style.display = 'block';
+                } else {
+                    customDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Confirm delete account
+        async function confirmDeleteAccount() {
+            const reason = document.getElementById('deleteReason').value;
+            const customReason = document.getElementById('customReason').value;
+            const password = document.getElementById('deletePassword').value;
+            
+            if (!reason) {
+                showNotification('Seleziona un motivo per l\'eliminazione', 'error');
+                return;
+            }
+            
+            if (reason === 'other' && !customReason.trim()) {
+                showNotification('Specifica il motivo personalizzato', 'error');
+                return;
+            }
+            
+            if (!password) {
+                showNotification('Inserisci la password per confermare', 'error');
+                return;
+            }
+            
+            const finalReason = reason === 'other' ? customReason : reason;
+            
+            if (!confirm(`Sei ASSOLUTAMENTE sicuro di voler eliminare il tuo account?\n\nMotivo: ${finalReason}\n\nQuesta azione è IRREVERSIBILE!`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/delete-account', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'demo-token'}`
+                    },
+                    body: JSON.stringify({
+                        password: password,
+                        reason: finalReason
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Account eliminato con successo', 'success');
+                    
+                    // Logout e redirect
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('auth_token');
+                    currentUser = null;
+                    isAuthenticated = false;
+                    posts = [];
+                    
+                    // Show login modal
+                    document.getElementById('authModal').style.display = 'flex';
+                    document.getElementById('mainApp').style.display = 'none';
+                    
+                    // Close modal
+                    document.querySelector('[style*="position: fixed"]').remove();
+                } else {
+                    const error = await response.json();
+                    showNotification('Errore: ' + error.message, 'error');
+                }
+            } catch (error) {
+                console.error('Delete account error:', error);
+                showNotification('Errore nell\'eliminazione dell\'account', 'error');
+            }
+        }
+
         // Authentication functions
         let isAuthenticated = false;
 
@@ -4979,6 +5122,8 @@
         window.showReport = showReport;
         window.showTerms = showTerms;
         window.showPrivacyPolicy = showPrivacyPolicy;
+        window.showDeleteAccount = showDeleteAccount;
+        window.confirmDeleteAccount = confirmDeleteAccount;
         window.changeProfilePicture = changeProfilePicture;
         window.updateAllPostAvatars = updateAllPostAvatars;
         window.handleSearchKeypress = handleSearchKeypress;
