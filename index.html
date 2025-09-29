@@ -436,6 +436,82 @@
             padding: 20px;
         }
         
+        /* Share Modal Styles */
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .share-modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .share-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .share-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .share-btn.facebook { background: #1877f2; }
+        .share-btn.twitter { background: #000; }
+        .share-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+        .share-btn.linkedin { background: #0077b5; }
+        .share-btn.telegram { background: #0088cc; }
+        .share-btn.whatsapp { background: #25d366; }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .share-modal-content {
+                padding: 20px;
+                margin: 20px;
+                width: calc(100% - 40px);
+            }
+            
+            .share-buttons-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .share-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+        
         .notification {
             display: flex;
             align-items: center;
@@ -2730,54 +2806,43 @@
         window.showShareModal = function(postContent, postUrl, postId) {
             console.log('📤 Showing share modal...');
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            `;
+            modal.className = 'share-modal';
             
             modal.innerHTML = `
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <div class="share-modal-content">
                     <h3 style="color: #fff; margin-bottom: 20px; text-align: center;">📤 Condividi Post</h3>
                     
                     <div style="margin-bottom: 20px; padding: 15px; background: #333; border-radius: 10px;">
                         <p style="color: #fff; margin: 0; font-style: italic;">"${postContent.substring(0, 100)}${postContent.length > 100 ? '...' : ''}"</p>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <button onclick="shareToFacebook('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('div').parentElement.remove();" style="background: #1877f2; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="share-buttons-grid">
+                        <button class="share-btn facebook" onclick="shareToFacebook('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-facebook-f"></i>
                             Facebook
                         </button>
                         
-                        <button onclick="shareToTwitter('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('div').parentElement.remove();" style="background: #000; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <button class="share-btn twitter" onclick="shareToTwitter('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-x-twitter"></i>
                             X (Twitter)
                         </button>
                         
-                        <button onclick="shareToInstagram('${postContent.replace(/'/g, "\\'")}'); this.closest('div').parentElement.remove();" style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <button class="share-btn instagram" onclick="shareToInstagram('${postContent.replace(/'/g, "\\'")}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-instagram"></i>
                             Instagram
                         </button>
                         
-                        <button onclick="shareToLinkedIn('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('div').parentElement.remove();" style="background: #0077b5; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <button class="share-btn linkedin" onclick="shareToLinkedIn('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-linkedin-in"></i>
                             LinkedIn
                         </button>
                         
-                        <button onclick="shareToTelegram('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('div').parentElement.remove();" style="background: #0088cc; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <button class="share-btn telegram" onclick="shareToTelegram('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-telegram-plane"></i>
                             Telegram
                         </button>
                         
-                        <button onclick="shareToWhatsApp('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('div').parentElement.remove();" style="background: #25d366; color: white; border: none; padding: 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <button class="share-btn whatsapp" onclick="shareToWhatsApp('${postContent.replace(/'/g, "\\'")}', '${postUrl || window.location.href}'); this.closest('.share-modal').remove();">
                             <i class="fab fa-whatsapp"></i>
                             WhatsApp
                         </button>
@@ -2795,7 +2860,7 @@
                     </div>
                     
                     <div style="display: flex; gap: 15px;">
-                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">Chiudi</button>
+                        <button onclick="this.closest('.share-modal').remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">Chiudi</button>
                     </div>
                 </div>
             `;
@@ -4406,6 +4471,13 @@
                 badge.style.display = unreadCount > 0 ? 'block' : 'none';
             }
         }
+        
+        // Test notification function
+        window.testNotification = function() {
+            console.log('🧪 Testing notification...');
+            addNotification('🧪 Test Notifica', 'Questa è una notifica di test!', null, { test: true });
+            showNotification('Notifica di test creata!');
+        };
         
         // Load notifications
         function loadNotifications() {
