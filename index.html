@@ -4886,6 +4886,7 @@
             
             try {
                 console.log('📱 Mobile login attempt:', { email, password: '***' });
+                console.log('📱 Using localhost API:', window.location.origin + '/api/auth/login');
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -4999,6 +5000,7 @@
             }
             
             try {
+                console.log('📱 Using localhost API for registration:', window.location.origin + '/api/auth/register');
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
