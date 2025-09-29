@@ -1778,7 +1778,7 @@
 </head>
 <body>
     <!-- Login/Register Modal -->
-    <div id="authModal" class="auth-modal">
+    <div id="authModal" class="auth-modal" style="display: flex;">
         <div class="auth-container">
             <div class="auth-header">
                 <div class="auth-logo">
@@ -4749,8 +4749,10 @@
 
         // Show main app
         function showMainApp() {
-            document.getElementById('authModal').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'grid';
+            const authModal = document.getElementById('authModal');
+            const mainApp = document.getElementById('mainApp');
+            if (authModal) authModal.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'grid';
             document.getElementById('mainApp').classList.add('show');
             
             // Update profile info if user is logged in
@@ -4773,9 +4775,13 @@
         function showAuthModal() {
             console.log('showAuthModal called');
             const authModal = document.getElementById('authModal');
+            const mainApp = document.getElementById('mainApp');
             if (authModal) {
                 authModal.style.display = 'flex';
                 console.log('Auth modal shown');
+            }
+            if (mainApp) {
+                mainApp.style.display = 'none';
             }
         }
 
