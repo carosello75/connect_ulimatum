@@ -4961,8 +4961,8 @@
                     // Save user data
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     
-                    // Load user-specific posts for home feed
-                    loadUserPosts();
+                    // Load all posts for home feed (GLOBAL - from all users)
+                    loadAllPostsForHome();
                     
                     showNotification('Registrazione effettuata con successo!');
                     showMainApp();
