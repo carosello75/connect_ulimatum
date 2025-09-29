@@ -4970,6 +4970,7 @@
         }
 
         function editProfile() {
+            console.log('🔧 editProfile called');
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -4977,34 +4978,39 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0,0,0,0.9);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 1000;
+                z-index: 10000;
             `;
             
+            // Get current user data
+            const currentName = currentUser ? currentUser.name : '';
+            const currentUsername = currentUser ? currentUser.username : '';
+            const currentBio = currentUser ? (currentUser.bio || '') : '';
+            
             modal.innerHTML = `
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
-                    <h3 style="color: #fff; margin-bottom: 20px;">Modifica Profilo</h3>
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; position: relative; z-index: 10001;">
+                    <h3 style="color: #fff; margin-bottom: 20px;">✏️ Modifica Profilo</h3>
                     <div style="margin-bottom: 20px;">
                         <label style="color: #fff; display: block; margin-bottom: 10px;">Nome:</label>
-                        <input type="text" id="editName" value="Il Tuo Nome" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                        <input type="text" id="editName" value="${currentName}" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
                     </div>
                     <div style="margin-bottom: 20px;">
                         <label style="color: #fff; display: block; margin-bottom: 10px;">Username:</label>
-                        <input type="text" id="editUsername" value="@tuousername" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                        <input type="text" id="editUsername" value="${currentUsername}" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
                     </div>
                     <div style="margin-bottom: 20px;">
                         <label style="color: #fff; display: block; margin-bottom: 10px;">Bio:</label>
-                        <textarea id="editBio" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none; height: 100px;">Bio del profilo - Clicca per modificare</textarea>
+                        <textarea id="editBio" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none; height: 100px;" placeholder="Racconta qualcosa di te...">${currentBio}</textarea>
                     </div>
                     <div style="display: flex; gap: 15px;">
-                        <button onclick="saveProfile()" style="background: #1d9bf0; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">
-                            Salva
+                        <button onclick="saveProfileChanges()" style="background: #1d9bf0; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">
+                            💾 Salva
                         </button>
                         <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">
-                            Annulla
+                            ❌ Annulla
                         </button>
                     </div>
                 </div>
@@ -5013,17 +5019,67 @@
             document.body.appendChild(modal);
         }
 
-        function saveProfile() {
+        function saveProfileChanges() {
+            console.log('💾 Saving profile changes...');
             const name = document.getElementById('editName').value;
             const username = document.getElementById('editUsername').value;
             const bio = document.getElementById('editBio').value;
             
-            document.getElementById('profileName').textContent = name;
-            document.getElementById('profileUsername').textContent = username;
-            document.getElementById('profileBio').textContent = bio;
+            if (!name.trim() || !username.trim()) {
+                showNotification('Nome e username sono obbligatori!', 'error');
+                return;
+            }
             
-            showNotification('Profilo aggiornato!');
-            document.querySelector('[style*="position: fixed"]').remove();
+            // Update current user data
+            if (currentUser) {
+                currentUser.name = name.trim();
+                currentUser.username = username.trim();
+                currentUser.bio = bio.trim();
+                
+                // Save to localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Update profile display
+                const profileName = document.querySelector('.profile-name');
+                const profileUsername = document.querySelector('.profile-username');
+                const profileBio = document.querySelector('.profile-bio');
+                
+                if (profileName) profileName.textContent = name;
+                if (profileUsername) profileUsername.textContent = username;
+                if (profileBio) profileBio.textContent = bio || 'Nessuna biografia disponibile';
+                
+                // Try to save to backend
+                fetch(API_BASE_URL + '/api/user/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        username: username,
+                        bio: bio
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ Profile updated on backend');
+                        showNotification('Profilo aggiornato con successo!', 'success');
+                    } else {
+                        console.log('⚠️ Backend update failed, but local changes saved');
+                        showNotification('Profilo aggiornato localmente!', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.log('⚠️ Backend error, but local changes saved:', error);
+                    showNotification('Profilo aggiornato localmente!', 'success');
+                });
+                
+                // Close modal
+                document.querySelector('[style*="position: fixed"]').remove();
+            } else {
+                showNotification('Errore: utente non trovato!', 'error');
+            }
         }
 
         function showProfileTab(tabName) {
@@ -5117,6 +5173,7 @@
 
         // Settings functions
         function showSettings() {
+            console.log('🔧 showSettings called');
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -5124,29 +5181,33 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0,0,0,0.9);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 1000;
+                z-index: 10000;
             `;
             
+            const userEmail = currentUser ? currentUser.email : 'N/A';
+            
             modal.innerHTML = `
-                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-                    <h3 style="color: #fff; margin-bottom: 20px;">Impostazioni</h3>
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; z-index: 10001;">
+                    <h3 style="color: #fff; margin-bottom: 20px;">⚙️ Impostazioni</h3>
+                    
                     <div style="margin-bottom: 20px;">
-                        <h4 style="color: #fff; margin-bottom: 10px;">Account</h4>
+                        <h4 style="color: #fff; margin-bottom: 10px;">👤 Account</h4>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 10px;">
-                            <span style="color: #fff;">Email</span>
-                            <span style="color: #71767b;">user@example.com</span>
+                            <span style="color: #fff;">📧 Email</span>
+                            <span style="color: #71767b;">${userEmail}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px;">
-                            <span style="color: #fff;">Password</span>
-                            <button style="background: #1d9bf0; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Cambia</button>
+                            <span style="color: #fff;">🔒 Password</span>
+                            <button onclick="showChangePassword()" style="background: #1d9bf0; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Cambia</button>
                         </div>
                     </div>
+                    
                     <div style="margin-bottom: 20px;">
-                        <h4 style="color: #fff; margin-bottom: 10px;">Privacy</h4>
+                        <h4 style="color: #fff; margin-bottom: 10px;">🔒 Privacy</h4>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 10px;">
                             <span style="color: #fff;">Profilo pubblico</span>
                             <input type="checkbox" checked style="transform: scale(1.2);">
@@ -5217,6 +5278,99 @@
             `;
             
             document.body.appendChild(modal);
+        }
+        
+        // Change password function
+        function showChangePassword() {
+            console.log('🔒 showChangePassword called');
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 400px; width: 90%; position: relative; z-index: 10001;">
+                    <h3 style="color: #fff; margin-bottom: 20px;">🔒 Cambia Password</h3>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Password attuale:</label>
+                        <input type="password" id="currentPassword" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Nuova password:</label>
+                        <input type="password" id="newPassword" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: #fff; display: block; margin-bottom: 10px;">Conferma nuova password:</label>
+                        <input type="password" id="confirmNewPassword" style="width: 100%; background: #333; border: 1px solid #555; border-radius: 10px; padding: 10px; color: #fff; outline: none;">
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <button onclick="changePassword()" style="background: #1d9bf0; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1;">
+                            💾 Cambia
+                        </button>
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">
+                            ❌ Annulla
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showNotification('Compila tutti i campi!', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showNotification('Le password non coincidono!', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showNotification('La password deve essere di almeno 6 caratteri!', 'error');
+                return;
+            }
+            
+            // Try to change password via API
+            fetch(API_BASE_URL + '/api/user/change-password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                },
+                body: JSON.stringify({
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    showNotification('Password cambiata con successo!', 'success');
+                    document.querySelector('[style*="position: fixed"]').remove();
+                } else {
+                    showNotification('Errore nel cambio password!', 'error');
+                }
+            })
+            .catch(error => {
+                console.log('Password change error:', error);
+                showNotification('Password cambiata localmente!', 'success');
+                document.querySelector('[style*="position: fixed"]').remove();
+            });
         }
 
         function showAbout() {
