@@ -3644,29 +3644,25 @@
                         return isNotCurrentUser && isNotCurrentEmail;
                     });
                     console.log('👥 Real users (filtered):', realUsers);
-                        
-                        if (realUsers.length > 0) {
-                            noUsersMessage.style.display = 'none';
-                            realUsersList.innerHTML = realUsers.map(user => `
-                                <div class="follow-user">
-                                    <div class="follow-avatar">
-                                        ${user.avatar && user.avatarType === 'image' ? 
-                                            `<img src="${user.avatar}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` :
-                                            `<i class="${user.avatar || 'fas fa-user'}"></i>`
-                                        }
-                                    </div>
-                                    <div class="follow-info">
-                                        <div class="follow-name">${user.name || user.username || 'Utente'}</div>
-                                        <div class="follow-username">@${user.username || 'user'}</div>
-                                    </div>
-                                    <button class="follow-btn" onclick="followUser('${user.id}')">Segui</button>
-                                    <button class="message-btn" onclick="openChat('${user.id}')" style="background: #1a8cd8; color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; margin-left: 5px; font-size: 12px;">💬</button>
+                    
+                    if (realUsers.length > 0) {
+                        noUsersMessage.style.display = 'none';
+                        realUsersList.innerHTML = realUsers.map(user => `
+                            <div class="follow-user">
+                                <div class="follow-avatar">
+                                    ${user.avatar && user.avatarType === 'image' ? 
+                                        `<img src="${user.avatar}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` :
+                                        `<i class="${user.avatar || 'fas fa-user'}"></i>`
+                                    }
                                 </div>
-                            `).join('');
-                        } else {
-                            noUsersMessage.style.display = 'block';
-                            realUsersList.innerHTML = '';
-                        }
+                                <div class="follow-info">
+                                    <div class="follow-name">${user.name || user.username || 'Utente'}</div>
+                                    <div class="follow-username">@${user.username || 'user'}</div>
+                                </div>
+                                <button class="follow-btn" onclick="followUser('${user.id}')">Segui</button>
+                                <button class="message-btn" onclick="openChat('${user.id}')" style="background: #1a8cd8; color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; margin-left: 5px; font-size: 12px;">💬</button>
+                            </div>
+                        `).join('');
                     } else {
                         noUsersMessage.style.display = 'block';
                         realUsersList.innerHTML = '';
