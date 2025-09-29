@@ -2972,7 +2972,7 @@
         async function loadAllPosts() {
             // Try to load from database first
             try {
-                const response = await fetch('/api/posts');
+                const response = await fetch(API_BASE_URL + '/api/posts');
                 if (response.ok) {
                     const data = await response.json();
                     if (data.posts && data.posts.length > 0) {
@@ -3007,7 +3007,7 @@
             console.log('🏠 Loading all posts for home feed (GLOBAL)...');
             try {
                 // Try to load all posts from database
-                const response = await fetch('/api/posts');
+                const response = await fetch(API_BASE_URL + '/api/posts');
                 console.log('🏠 Database response status:', response.status);
                 console.log('🏠 Database response ok:', response.ok);
                 
@@ -3118,7 +3118,7 @@
             
             // Save to database via API (GLOBAL)
             try {
-                const response = await fetch('/api/posts', {
+                const response = await fetch(API_BASE_URL + '/api/posts', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4230,7 +4230,7 @@
             if (mobileUsersList) {
                 try {
                     // Try to load users from backend
-                    const response = await fetch('/api/users');
+                    const response = await fetch(API_BASE_URL + '/api/users');
                     if (response.ok) {
                         const data = await response.json();
                         console.log('📱 Mobile users from backend:', data);
@@ -4385,7 +4385,7 @@
         async function sendMessage(recipientId, content) {
             console.log('💬 Sending message to:', recipientId, 'Content:', content);
             try {
-                const response = await fetch('/api/messages', {
+                const response = await fetch(API_BASE_URL + '/api/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4870,7 +4870,7 @@
                         
                         // Save to backend
                         try {
-                            const response = await fetch('/api/user/avatar', {
+                            const response = await fetch(API_BASE_URL + '/api/user/avatar', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
@@ -5295,7 +5295,7 @@
             }
             
             try {
-                const response = await fetch('/api/auth/delete-account', {
+                const response = await fetch(API_BASE_URL + '/api/auth/delete-account', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5524,8 +5524,8 @@
             
             try {
                 console.log('📱 Mobile login attempt:', { email, password: '***' });
-                console.log('📱 Using localhost API:', window.location.origin + '/api/auth/login');
-                const response = await fetch('/api/auth/login', {
+                console.log('📱 Using Railway API:', API_BASE_URL + '/api/auth/login');
+                const response = await fetch(API_BASE_URL + '/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5657,8 +5657,8 @@
             }
             
             try {
-                console.log('📱 Using localhost API for registration:', window.location.origin + '/api/auth/register');
-                const response = await fetch('/api/auth/register', {
+                console.log('📱 Using Railway API for registration:', API_BASE_URL + '/api/auth/register');
+                const response = await fetch(API_BASE_URL + '/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5722,7 +5722,7 @@
             const email = document.getElementById('forgotEmail').value;
             
             try {
-                const response = await fetch('/api/forgot-password', {
+                const response = await fetch(API_BASE_URL + '/api/forgot-password', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5819,7 +5819,7 @@
         window.testConnection = async function() {
             console.log('📱 Testing mobile connection...');
             try {
-                const response = await fetch('/api/health');
+                const response = await fetch(API_BASE_URL + '/api/health');
                 const data = await response.json();
                 console.log('📱 Mobile connection test:', data);
                 showNotification('Connessione OK: ' + data.message);
