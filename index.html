@@ -2638,7 +2638,7 @@
         // Load all posts from database (for explore section)
         async function loadAllPostsFromDatabase() {
             try {
-                const response = await fetch('/api/posts');
+                const response = await fetch(`${API_BASE_URL}/api/posts`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.posts && data.posts.length > 0) {
@@ -4050,20 +4050,60 @@
         
         // Load explore posts
         async function loadExplorePosts() {
+            console.log('🔍 Loading explore posts...');
             const explorePostsContainer = document.getElementById('explorePosts');
             if (explorePostsContainer) {
-                // Load all posts from database
-                await loadAllPostsFromDatabase();
-                
-                // Render posts in explore section
-                explorePostsContainer.innerHTML = '';
-                posts.forEach(post => {
-                    const postElement = createPostElement(post);
-                    explorePostsContainer.appendChild(postElement);
-                });
-                
-                if (posts.length === 0) {
-                    explorePostsContainer.innerHTML = '<p style="color: #71767b; text-align: center; padding: 20px;">Nessun post da esplorare</p>';
+                try {
+                    // Load all posts from database
+                    console.log('🔍 Fetching all posts from Railway...');
+                    const response = await fetch(`${API_BASE_URL}/api/posts`);
+                    console.log('🔍 Railway posts response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('🔍 Railway posts data:', data);
+                        
+                        if (data.posts && data.posts.length > 0) {
+                            posts = data.posts;
+                            console.log('🔍 Loaded posts for explore:', posts.length);
+                            
+                            // Render posts in explore section
+                            explorePostsContainer.innerHTML = '';
+                            posts.forEach(post => {
+                                const postElement = createPostElement(post);
+                                explorePostsContainer.appendChild(postElement);
+                            });
+                        } else {
+                            console.log('🔍 No posts found, showing demo posts');
+                            // Show demo posts if no real posts
+                            const demoPosts = [
+                                { id: 1, content: 'Benvenuto su Connect! 🚀', author: 'Connect Team', timestamp: new Date().toISOString() },
+                                { id: 2, content: 'Scopri le nuove funzionalità! ✨', author: 'Connect Team', timestamp: new Date().toISOString() }
+                            ];
+                            
+                            explorePostsContainer.innerHTML = '';
+                            demoPosts.forEach(post => {
+                                const postElement = createPostElement(post);
+                                explorePostsContainer.appendChild(postElement);
+                            });
+                        }
+                    } else {
+                        console.log('🔍 Railway API error, showing demo posts');
+                        // Show demo posts if API error
+                        const demoPosts = [
+                            { id: 1, content: 'Benvenuto su Connect! 🚀', author: 'Connect Team', timestamp: new Date().toISOString() },
+                            { id: 2, content: 'Scopri le nuove funzionalità! ✨', author: 'Connect Team', timestamp: new Date().toISOString() }
+                        ];
+                        
+                        explorePostsContainer.innerHTML = '';
+                        demoPosts.forEach(post => {
+                            const postElement = createPostElement(post);
+                            explorePostsContainer.appendChild(postElement);
+                        });
+                    }
+                } catch (error) {
+                    console.log('🔍 Error loading explore posts:', error);
+                    explorePostsContainer.innerHTML = '<p style="color: #71767b; text-align: center; padding: 20px;">Errore nel caricamento dei post</p>';
                 }
             }
         }
@@ -5372,6 +5412,11 @@
         window.handleRegister = handleRegister;
         window.clearAllData = clearAllData;
         window.forceShowMainApp = forceShowMainApp;
+        
+        // Profile functions
+        window.editProfile = editProfile;
+        window.showSettings = showSettings;
+        window.showDeleteAccount = showDeleteAccount;
         
         // Debug function
         window.debugModal = function() {
