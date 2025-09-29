@@ -1790,7 +1790,7 @@
             <!-- Login Form -->
             <div id="loginForm" class="auth-form active">
                 <h2>Accedi al tuo account</h2>
-                <form onsubmit="handleLogin(event)">
+                <form onsubmit="handleLogin(event)" id="loginFormElement">
                     <div class="form-group">
                         <label for="loginEmail">Email</label>
                         <input type="email" id="loginEmail" placeholder="Inserisci la tua email" required>
@@ -4654,6 +4654,22 @@
             console.log('handleLogin called');
             event.preventDefault();
             
+            // Prevent form from disappearing
+            const loginForm = document.getElementById('loginForm');
+            const loginFormElement = document.getElementById('loginFormElement');
+            const loginButton = loginForm.querySelector('button[type="submit"]');
+            
+            // Prevent form reset
+            if (loginFormElement) {
+                loginFormElement.style.pointerEvents = 'none';
+            }
+            
+            // Show loading state
+            if (loginButton) {
+                loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accedendo...';
+                loginButton.disabled = true;
+            }
+            
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const rememberMe = document.getElementById('rememberMe').checked;
@@ -4700,10 +4716,27 @@
                     showMainApp();
                 } else {
                     showNotification('Errore: ' + data.message);
+                    // Restore button and form
+                    if (loginButton) {
+                        loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                        loginButton.disabled = false;
+                    }
+                    if (loginFormElement) {
+                        loginFormElement.style.pointerEvents = 'auto';
+                    }
                 }
             } catch (error) {
                 console.error('📱 Mobile login error:', error);
                 console.log('📱 Mobile login fallback activated');
+                
+                // Restore button and form on error
+                if (loginButton) {
+                    loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                    loginButton.disabled = false;
+                }
+                if (loginFormElement) {
+                    loginFormElement.style.pointerEvents = 'auto';
+                }
                 // Fallback for demo purposes
                 currentUser = {
                     id: btoa(email).replace(/[^a-zA-Z0-9]/g, ''),
@@ -4716,11 +4749,20 @@
                 isAuthenticated = true;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Load all posts for home feed (GLOBAL - from all users)
-                loadAllPostsForHome();
-                
-                showNotification('Login demo effettuato!');
-                showMainApp();
+                    // Load all posts for home feed (GLOBAL - from all users)
+                    loadAllPostsForHome();
+                    
+                    // Restore button and form on success
+                    if (loginButton) {
+                        loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                        loginButton.disabled = false;
+                    }
+                    if (loginFormElement) {
+                        loginFormElement.style.pointerEvents = 'auto';
+                    }
+                    
+                    showNotification('Login demo effettuato!');
+                    showMainApp();
             }
         }
 
