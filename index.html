@@ -3620,21 +3620,26 @@
             
             if (realUsersList) {
                 try {
-                    // Try to load users from backend
-                    const response = await fetch('/api/users');
-                    if (response.ok) {
-                        const users = await response.json();
-                        console.log('👥 Users from backend:', users);
-                        console.log('👥 Current user ID:', currentUser.id);
-                        console.log('👥 Current user email:', currentUser.email);
-                        // Filter out current user by ID and email
-                        const realUsers = users.filter(user => {
-                            const isNotCurrentUser = user.id !== currentUser.id;
-                            const isNotCurrentEmail = user.email !== currentUser.email;
-                            console.log(`👥 User ${user.username}: ID match=${user.id === currentUser.id}, Email match=${user.email === currentUser.email}`);
-                            return isNotCurrentUser && isNotCurrentEmail;
-                        });
-                        console.log('👥 Real users (filtered):', realUsers);
+                    // Demo users for testing
+                    const demoUsers = [
+                        { id: 1, username: 'marcorossi', name: 'Marco Rossi', email: 'marco@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                        { id: 2, username: 'sofiatech', name: 'Sofia Tech', email: 'sofia@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                        { id: 3, username: 'technewsit', name: 'Tech News Italia', email: 'tech@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                        { id: 4, username: 'testuser', name: 'Test User', email: 'test@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' },
+                        { id: 5, username: 'fabbietto75', name: 'Fabbietto', email: 'fabio@example.com', avatar: 'fas fa-user', avatarType: 'icon', status: 'online' }
+                    ];
+                    
+                    console.log('👥 Demo users loaded:', demoUsers);
+                    console.log('👥 Current user ID:', currentUser.id);
+                    console.log('👥 Current user email:', currentUser.email);
+                    // Filter out current user by ID and email
+                    const realUsers = demoUsers.filter(user => {
+                        const isNotCurrentUser = user.id !== currentUser.id;
+                        const isNotCurrentEmail = user.email !== currentUser.email;
+                        console.log(`👥 User ${user.username}: ID match=${user.id === currentUser.id}, Email match=${user.email === currentUser.email}`);
+                        return isNotCurrentUser && isNotCurrentEmail;
+                    });
+                    console.log('👥 Real users (filtered):', realUsers);
                         
                         if (realUsers.length > 0) {
                             noUsersMessage.style.display = 'none';
