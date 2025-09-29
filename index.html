@@ -4769,31 +4769,56 @@
             if (savedUser) {
                 console.log('✅ User found in localStorage');
                 currentUser = JSON.parse(savedUser);
-                isAuthenticated = true;
+                console.log('🔍 Current user ID:', currentUser.id);
+                console.log('🔍 Current user email:', currentUser.email);
                 
-                // Update profile avatar if user has one
-                if (currentUser.avatar && currentUser.avatarType === 'image') {
-                    const profileAvatar = document.querySelector('.profile-avatar');
-                    if (profileAvatar) {
-                        profileAvatar.style.backgroundImage = `url(${currentUser.avatar})`;
-                        profileAvatar.style.backgroundSize = 'cover';
-                        profileAvatar.style.backgroundPosition = 'center';
-                    }
-                }
-                
-                // Load all posts for home feed (GLOBAL - from all users)
-                loadAllPostsForHome();
-                
-                // Load user profile data
-                loadUserProfileData();
-                
-                showMainApp();
+                // Check if user still exists in database
+                fetch(`${API_BASE_URL}/api/users`)
+                    .then(response => response.json())
+                    .then(users => {
+                        const userExists = users.some(user => user.id === currentUser.id);
+                        if (!userExists) {
+                            console.log('❌ User no longer exists in database, clearing localStorage');
+                            localStorage.removeItem('currentUser');
+                            localStorage.removeItem('auth_token');
+                            showAuthModal();
+                            return;
+                        }
+                        isAuthenticated = true;
+                        loadUserData();
+                    })
+                    .catch(error => {
+                        console.log('❌ Error checking user existence:', error);
+                        // Fallback: clear localStorage and show auth modal
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('auth_token');
+                        showAuthModal();
+                    });
             } else {
-                // User not authenticated, show auth modal
                 console.log('❌ User not authenticated, showing auth modal');
                 console.log('🔍 Auth modal element:', document.getElementById('authModal'));
                 showAuthModal();
             }
+        }
+        
+        function loadUserData() {
+            // Update profile avatar if user has one
+            if (currentUser.avatar && currentUser.avatarType === 'image') {
+                const profileAvatar = document.querySelector('.profile-avatar');
+                if (profileAvatar) {
+                    profileAvatar.style.backgroundImage = `url(${currentUser.avatar})`;
+                    profileAvatar.style.backgroundSize = 'cover';
+                    profileAvatar.style.backgroundPosition = 'center';
+                }
+            }
+            
+            // Load all posts for home feed (GLOBAL - from all users)
+            loadAllPostsForHome();
+            
+            // Load user profile data
+            loadUserProfileData();
+            
+            showMainApp();
         }
 
         // Show main app
