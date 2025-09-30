@@ -511,6 +511,17 @@ app.post('/api/auth/login', (req, res) => {
   );
 });
 
+// Verifica token di autenticazione
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+  res.json({ 
+    valid: true, 
+    user: {
+      id: req.user.id,
+      username: req.user.username
+    }
+  });
+});
+
 // 👤 UTENTI
 app.get('/api/users/profile/:username', (req, res) => {
   const { username } = req.params;
@@ -1705,7 +1716,7 @@ app.get('/api/users/profile/:username', (req, res) => {
 });
 
 // Endpoint per ottenere tutti gli utenti
-app.get('/api/users', (req, res) => {
+app.get('/api/users', authenticateToken, (req, res) => {
   console.log('👥 Loading all users...');
   
   db.all(
@@ -1718,7 +1729,7 @@ app.get('/api/users', (req, res) => {
       }
       
       console.log(`👥 Found ${users.length} users`);
-      res.json(users || []);
+      res.json({ users: users || [] });
     }
   );
 });

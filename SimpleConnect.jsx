@@ -64,6 +64,7 @@ function SimpleConnect() {
             ]);
           } else {
             // Token non valido, pulisci tutto
+            console.log('Token non valido, logout automatico');
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
             setShowLogin(true);
@@ -71,6 +72,7 @@ function SimpleConnect() {
         } catch (error) {
           console.error('Errore nella verifica dell\'autenticazione:', error);
           // In caso di errore di rete, mantieni l'utente loggato
+          console.log('Fallback: mantieni utente loggato per errore di rete');
           setUser(JSON.parse(savedUser));
           setShowLogin(false);
           loadPosts();
@@ -119,9 +121,11 @@ function SimpleConnect() {
           
           if (!response.ok) {
             // Token scaduto, logout automatico
+            console.log('Token scaduto durante refresh, logout automatico');
             handleLogout();
           } else {
             // Aggiorna i dati in background
+            console.log('Refresh automatico dati in corso...');
             loadPosts(true);
             loadNotifications();
             loadOnlineUsers();
