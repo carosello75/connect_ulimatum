@@ -25,26 +25,129 @@ function SimpleConnect() {
   const [newComment, setNewComment] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const fileInputRef = useRef(null);
+  const refreshInterval = useRef(null);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [connectionStatus, setConnectionStatus] = useState('online');
 
-  // Carica utente dal localStorage
+  // Verifica autenticazione e carica dati
   useEffect(() => {
-    const savedUser = localStorage.getItem('auth_user');
-    const savedToken = localStorage.getItem('auth_token');
+    const checkAuth = async () => {
+      const savedUser = localStorage.getItem('auth_user');
+      const savedToken = localStorage.getItem('auth_token');
+      
+      if (savedUser && savedToken) {
+        try {
+          // Verifica che il token sia ancora valido
+          const apiBase = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : 'https://web-production-5cc7e.up.railway.app';
+          
+          const response = await fetch(`${apiBase}/api/auth/verify`, {
+            headers: {
+              'Authorization': `Bearer ${savedToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const userData = JSON.parse(savedUser);
+            setUser(userData);
+            setShowLogin(false);
+            
+            // Carica tutti i dati in parallelo per migliorare le performance
+            await Promise.all([
+              loadPosts(),
+              loadNotifications(),
+              loadOnlineUsers(),
+              loadAllUsers()
+            ]);
+          } else {
+            // Token non valido, pulisci tutto
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            setShowLogin(true);
+          }
+        } catch (error) {
+          console.error('Errore nella verifica dell\'autenticazione:', error);
+          // In caso di errore di rete, mantieni l'utente loggato
+          setUser(JSON.parse(savedUser));
+          setShowLogin(false);
+          loadPosts();
+          loadNotifications();
+          loadOnlineUsers();
+          loadAllUsers();
+        }
+      } else {
+        setShowLogin(true);
+      }
+    };
     
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      loadPosts();
-      loadNotifications();
-      loadOnlineUsers();
-    } else {
-      setShowLogin(true);
-    }
+    checkAuth();
   }, []);
 
-  // Carica post
-  const loadPosts = async () => {
+  // Monitora lo stato della connessione
+  useEffect(() => {
+    const handleOnline = () => setConnectionStatus('online');
+    const handleOffline = () => setConnectionStatus('offline');
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Sistema di refresh automatico per mantenere la sessione attiva
+  useEffect(() => {
+    if (user) {
+      // Refresh ogni 2 minuti per mantenere i dati aggiornati
+      refreshInterval.current = setInterval(async () => {
+        try {
+          const apiBase = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : 'https://web-production-5cc7e.up.railway.app';
+          
+          const token = localStorage.getItem('auth_token');
+          const response = await fetch(`${apiBase}/api/auth/verify`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (!response.ok) {
+            // Token scaduto, logout automatico
+            handleLogout();
+          } else {
+            // Aggiorna i dati in background
+            loadPosts(true);
+            loadNotifications();
+            loadOnlineUsers();
+          }
+        } catch (error) {
+          console.error('Errore nel refresh della sessione:', error);
+        }
+      }, 2 * 60 * 1000); // 2 minuti
+    }
+
+    return () => {
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+      }
+    };
+  }, [user]);
+
+  // Carica post con cache intelligente
+  const loadPosts = async (forceRefresh = false) => {
     try {
+      // Evita refresh troppo frequenti (max ogni 30 secondi)
+      const now = Date.now();
+      if (!forceRefresh && (now - lastRefresh) < 30000) {
+        return;
+      }
+
       setLoading(true);
       const apiBase = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
@@ -53,13 +156,15 @@ function SimpleConnect() {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiBase}/api/posts/feed`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
         }
       });
       
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts || []);
+        setLastRefresh(now);
       }
     } catch (error) {
       console.error('Errore nel caricamento dei post:', error);
@@ -143,6 +248,29 @@ function SimpleConnect() {
     }
   };
 
+  // Carica tutti gli utenti registrati
+  const loadAllUsers = async () => {
+    try {
+      const apiBase = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001' 
+        : 'https://web-production-5cc7e.up.railway.app';
+      
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiBase}/api/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento degli utenti:', error);
+    }
+  };
+
   // Gestione file upload
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -188,6 +316,37 @@ function SimpleConnect() {
       }
     } catch (error) {
       console.error('Errore nel like:', error);
+    }
+  };
+
+  // Cancella post
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Sei sicuro di voler cancellare questo post?')) {
+      return;
+    }
+    
+    try {
+      const apiBase = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001' 
+        : 'https://web-production-5cc7e.up.railway.app';
+      
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiBase}/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        loadPosts();
+        alert('Post cancellato con successo!');
+      } else {
+        alert('Errore nella cancellazione del post');
+      }
+    } catch (error) {
+      console.error('Errore nella cancellazione:', error);
+      alert('Errore nella cancellazione del post');
     }
   };
 
@@ -502,6 +661,22 @@ function SimpleConnect() {
             <h1 className="text-xl font-bold text-blue-400">Connect</h1>
           </div>
           <div className="flex items-center space-x-4">
+            <div className={`flex items-center space-x-1 text-xs ${
+              connectionStatus === 'online' ? 'text-green-400' : 'text-red-400'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'online' ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+              <span>{connectionStatus === 'online' ? 'Online' : 'Offline'}</span>
+            </div>
+            <button
+              onClick={() => loadPosts(true)}
+              disabled={loading}
+              className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm disabled:bg-gray-700"
+              title="Aggiorna feed"
+            >
+              {loading ? '⏳' : '🔄'}
+            </button>
             <span className="text-sm">Ciao, {user.name}!</span>
             <button
               onClick={handleLogout}
@@ -627,6 +802,16 @@ function SimpleConnect() {
                         <div className="text-sm text-gray-400">@{post.username}</div>
                       </div>
                     </div>
+                    {/* Pulsante cancellazione - solo per i propri post */}
+                    {user && post.user_id === user.id && (
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors p-1"
+                        title="Cancella post"
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </div>
                   
                   <div className="text-gray-100 mb-3">
@@ -731,25 +916,39 @@ function SimpleConnect() {
           </div>
         </div>
         
-        {/* Sidebar destra - Utenti online */}
+        {/* Sidebar destra - Utenti */}
         <div className="w-80 p-4 border-l border-gray-800">
-          <h3 className="text-lg font-bold mb-4 text-green-400">👥 Online</h3>
+          <h3 className="text-lg font-bold mb-4 text-green-400">👥 Utenti</h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {onlineUsers.length === 0 ? (
-              <div className="text-gray-400 text-sm">Nessun utente online</div>
+            {allUsers.length === 0 ? (
+              <div className="text-gray-400 text-sm">Caricamento utenti...</div>
             ) : (
-              onlineUsers.map((onlineUser) => (
-                <div key={onlineUser.id} className="bg-gray-800 p-3 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      onlineUser.status === 'online' ? 'bg-green-500' :
-                      onlineUser.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-                    }`}></div>
-                    <div className="text-sm text-gray-300">{onlineUser.name}</div>
-                    <div className="text-xs text-gray-500">@{onlineUser.username}</div>
+              allUsers.map((userItem) => {
+                const isOnline = onlineUsers.some(onlineUser => onlineUser.id === userItem.id);
+                const isCurrentUser = user && userItem.id === user.id;
+                
+                return (
+                  <div key={userItem.id} className={`bg-gray-800 p-3 rounded-lg ${
+                    isCurrentUser ? 'ring-2 ring-blue-500' : ''
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        isOnline ? 'bg-green-500' : 'bg-gray-500'
+                      }`}></div>
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-300 font-medium">
+                          {userItem.name}
+                          {isCurrentUser && ' (Tu)'}
+                        </div>
+                        <div className="text-xs text-gray-500">@{userItem.username}</div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {isOnline ? '🟢' : '⚫'}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
